@@ -53,7 +53,7 @@ def main():
 
     if _is_already_running():
         ctypes.windll.user32.MessageBoxW(
-            0, "PrismCore 已在运行中", "PrismCore", 0x40,
+            0, "PrismCore 已经在运行中", "PrismCore", 0x40,
         )
         sys.exit(1)
 
