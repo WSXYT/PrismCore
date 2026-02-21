@@ -468,7 +468,7 @@ class _EtwDpcSession:
         try:
             return self._start_session()
         except Exception:
-            logger.debug("ETW 会话启动异常", exc_info=True)
+            logger.error("ETW 会话启动异常")
             return False
 
     def _build_props(self, session_name: str, use_system_logger: bool):
@@ -563,7 +563,7 @@ class _EtwDpcSession:
             arr = (ctypes.c_uint64 * 1)(self._trace_handle.value)
             _advapi32.ProcessTrace(arr, 1, None, None)
         except Exception:
-            logger.debug("ProcessTrace 异常", exc_info=True)
+            logger.exception("ProcessTrace 异常")
         self._running = False
 
     def _on_event(self, event_record_ptr):
@@ -595,7 +595,7 @@ class _EtwDpcSession:
                 else:
                     self._stats[driver][1] += 1
         except Exception:
-            pass
+            logger.exception("ETW 事件回调解析异常")
 
     def flush_top(self, n: int = 5) -> list[DriverLatencyInfo]:
         """获取 top-N 驱动统计并重置计数器。"""

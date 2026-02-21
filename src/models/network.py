@@ -1,6 +1,9 @@
 """网络重置工具 — DNS刷新、Winsock重置、TCP/IP重置。"""
 
+import logging
 import subprocess
+
+logger = logging.getLogger(__name__)
 
 
 def flush_dns() -> bool:
@@ -13,6 +16,7 @@ def flush_dns() -> bool:
         )
         return True
     except Exception:
+        logger.error("刷新 DNS 缓存失败")
         return False
 
 
@@ -26,6 +30,7 @@ def reset_winsock() -> bool:
         )
         return True
     except Exception:
+        logger.error("重置 Winsock 失败")
         return False
 
 
@@ -39,4 +44,5 @@ def reset_tcp_ip() -> bool:
         )
         return True
     except Exception:
+        logger.error("重置 TCP/IP 失败")
         return False

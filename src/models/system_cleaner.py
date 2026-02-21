@@ -53,9 +53,8 @@ def list_old_drivers() -> list[dict]:
             creationflags=subprocess.CREATE_NO_WINDOW,
         )
     except Exception:
+        logger.error("枚举驱动商店失败")
         return []
-
-    # 按空行分隔记录块
     drivers = []
     blocks = result.stdout.split("\n\n")
     for block in blocks:
@@ -97,6 +96,7 @@ def delete_driver(inf_name: str) -> bool:
         )
         return True
     except Exception:
+        logger.error("删除驱动 %s 失败", inf_name)
         return False
 
 
@@ -229,6 +229,7 @@ def backup_and_delete_key(key_path: str) -> bool:
         )
         return True
     except Exception:
+        logger.error("备份/删除注册表项失败: %s", key_path)
         return False
 
 
@@ -306,4 +307,5 @@ def query_compact_os_status() -> bool:
         # 输出包含 "未" 或 "not" 表示未压缩
         return "未" in r.stdout or "not" in r.stdout.lower()
     except Exception:
+        logger.warning("查询 CompactOS 状态失败", exc_info=True)
         return False

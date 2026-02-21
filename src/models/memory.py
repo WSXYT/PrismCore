@@ -102,7 +102,7 @@ def force_purge() -> bool:
     if ok:
         logger.info("备用列表清理成功。")
     else:
-        logger.warning("备用列表清理失败（需要管理员权限？）。")
+        logger.exception("备用列表清理失败")
     return ok
 
 
@@ -157,7 +157,7 @@ def adjust_pagefile_size(drive: str = "C:", size_mb: int = 8192) -> bool:
         logger.info("已将 %s 上的页面文件设为 %d MB。", drive, size_mb)
         return True
     except Exception:
-        logger.warning("调整页面文件失败。", exc_info=True)
+        logger.error("调整页面文件失败")
         return False
 
 

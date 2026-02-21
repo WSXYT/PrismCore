@@ -1,6 +1,6 @@
-# 你
+# PrismCore
 
-智能 PC 优化与资源调度系统。通过 Windows 原生 API（ntdll / kernel32 / ETW / PDH）实现内存管理、CPU 调度、磁盘清理和驱动延迟诊断。纯本地运行，不联网、不上传数据。
+智能 PC 优化与资源调度系统。通过 Windows 原生 API（ntdll / kernel32 / ETW / PDH）实现内存管理、CPU 调度、磁盘清理和驱动延迟诊断。
 
 > 需要管理员权限运行。程序启动时会自动通过 UAC 提权，并通过 Mutex 确保单实例。
 

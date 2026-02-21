@@ -177,6 +177,7 @@ def scan_mft_large_files(
             try:
                 name = buf[name_offset:name_offset + name_len].decode("utf-16-le")
             except Exception:
+                logger.warning("MFT 记录解码失败 (offset=%d)", offset, exc_info=True)
                 offset += record.RecordLength
                 continue
 

@@ -281,9 +281,8 @@ def get_system_page_fault_count() -> int:
         # sin + sout 近似反映页错误活动
         return counters.sin + counters.sout
     except Exception:
+        log.warning("获取系统页错误数失败", exc_info=True)
         return 0
-
-
 class CpuTopology(NamedTuple):
     """CPU 核心拓扑信息。"""
     p_cores: list[int]   # P-Core 逻辑处理器索引列表

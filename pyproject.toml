@@ -9,6 +9,7 @@ dependencies = [
     "psutil>=6.0.0",
     "pywin32>=308",
     "wmi>=1.5.1",
+    "sentry-sdk>=2.0",
 ]
 
 [project.scripts]

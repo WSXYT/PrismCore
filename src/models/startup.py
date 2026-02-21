@@ -1,7 +1,10 @@
 """启动项管理 — 注册表 Run 键和任务计划程序。"""
 
+import logging
 import subprocess
 import winreg
+
+logger = logging.getLogger(__name__)
 from dataclasses import dataclass
 
 
@@ -69,9 +72,7 @@ def _scan_task_scheduler(items: list):
                         enabled=status in ("Ready", "就绪", "Running", "正在运行"),
                     ))
     except Exception:
-        pass
-
-
+        logger.warning("查询计划任务失败", exc_info=True)
 def toggle_startup_registry(item: StartupItem, enable: bool) -> bool:
     """启用或禁用注册表启动项。"""
     disabled_suffix = r"\AutorunsDisabled"
@@ -119,4 +120,5 @@ def toggle_startup_task(item: StartupItem, enable: bool) -> bool:
         )
         return True
     except Exception:
+        logger.error("切换计划任务启动项失败: %s", item.location)
         return False
