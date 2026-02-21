@@ -38,13 +38,23 @@ def _save_pagefile_info(drive: str, method: str, size_mb: int):
 
 
 def restore_pagefile_state():
-    """从 QSettings 恢复上次会话的分页文件跟踪状态。"""
+    """从 QSettings 恢复上次会话的分页文件跟踪状态。
+
+    检查临时分页文件是否仍存在，不存在则清除记录。
+    """
     global _created_pagefiles, _current_pagefile_size_mb
     from src.models.settings import AppSettings
-    info = AppSettings().pagefile_info
-    if info:
-        _created_pagefiles[info["drive"]] = info["method"]
-        _current_pagefile_size_mb = info["size_mb"]
+    settings = AppSettings()
+    info = settings.pagefile_info
+    if not info:
+        return
+    pagefile_path = os.path.join(info["drive"], "pagefile.sys")
+    if not os.path.exists(pagefile_path):
+        logger.info("临时分页文件 %s 已不存在，清除记录", pagefile_path)
+        settings.pagefile_info = None
+        return
+    _created_pagefiles[info["drive"]] = info["method"]
+    _current_pagefile_size_mb = info["size_mb"]
 
 
 def calc_health_score() -> int:
