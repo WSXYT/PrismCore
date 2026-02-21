@@ -1,0 +1,22 @@
+[project]
+name = "prismcore"
+version = "1.0.0"
+description = "智能PC优化与资源调度系统"
+requires-python = ">=3.12"
+dependencies = [
+    "PySide6>=6.8.0",
+    "PySide6-Fluent-Widgets>=1.7.0",
+    "psutil>=6.0.0",
+    "pywin32>=308",
+    "wmi>=1.5.1",
+]
+
+[project.scripts]
+prismcore = "main:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src", "main.py"]
