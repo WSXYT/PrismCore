@@ -38,6 +38,17 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 跳过重复运行
+        if: "!startsWith(github.ref, 'refs/tags/')"
+        shell: bash
+        run: |
+          if git tag --points-at HEAD | grep -q '^v'; then
+            echo "::notice::当前 commit 已有 v* 标签，由 tag 事件负责构建，跳过此次运行"
+            exit 1
+          fi
 
       - name: 解析版本号
         id: version
@@ -66,7 +77,7 @@ jobs:
         run: dotnet tool install -g vpk
 
       - name: 发布
-        timeout-minutes: 20
+        timeout-minutes: 45
         run: >
           dotnet publish ${{ env.PROJECT }}
           -c Release

@@ -2,6 +2,7 @@
 bin/
 obj/
 artifacts/
+!artifacts/setup-admin.manifest
 
 # IDE
 .vs/
