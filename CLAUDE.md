@@ -26,6 +26,11 @@
 ## 目标框架
 - net10.0-windows10.0.19041.0
 
+## 项目结构
+- Git 根目录：`D:\NAS\bc\PrismCore-C#\PrismCore\PrismCore\`（即 csproj 所在目录）
+- `.github/workflows/`、`artifacts/`、`build-pack.sh` 等均放在 Git 根目录下
+- 所有文件操作和路径引用以 Git 根目录为基准
+
 ## 注意
 - 请确保在使用前阅读并理解所有代码，特别是依赖库的使用和配置。
 - 对于大型文件处理，建议使用异步操作以避免阻塞主线程。
