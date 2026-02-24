@@ -75,10 +75,11 @@ public static class MftScanner
                    && returned > 8)
             {
                 int offset = 8;
-                while (offset < returned)
+                int minRecSize = Marshal.SizeOf<NativeApi.USN_RECORD_V2>();
+                while (offset + minRecSize <= returned)
                 {
                     var rec = Marshal.PtrToStructure<NativeApi.USN_RECORD_V2>(bufPtr + offset);
-                    if (rec.RecordLength == 0) break;
+                    if (rec.RecordLength < minRecSize) break;
 
                     var namePtr = bufPtr + offset + rec.FileNameOffset;
                     var name = Marshal.PtrToStringUni(namePtr, rec.FileNameLength / 2) ?? "";

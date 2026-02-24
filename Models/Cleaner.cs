@@ -68,9 +68,13 @@ public static class Cleaner
         {
             var children = Directory.GetDirectories(dir).Select(Path.GetFileName).ToHashSet();
             if (!children.Contains("Cache") || !children.Contains("GPUCache")) return false;
-            // 查找前两级 .asar 文件
-            foreach (var f in Directory.EnumerateFiles(dir, "*.asar", SearchOption.AllDirectories))
+            // 只检查 resources 子目录和当前目录的 .asar 文件，避免递归整个目录树
+            foreach (var f in Directory.EnumerateFiles(dir, "*.asar", SearchOption.TopDirectoryOnly))
                 return true;
+            var resources = Path.Combine(dir, "resources");
+            if (Directory.Exists(resources))
+                foreach (var f in Directory.EnumerateFiles(resources, "*.asar", SearchOption.TopDirectoryOnly))
+                    return true;
         }
         catch { }
         return false;
@@ -156,7 +160,7 @@ public static class Cleaner
         while (stack.Count > 0 && items.Count < max)
         {
             var dir = stack.Pop();
-            if (skipPrefixes.Any(dir.StartsWith)) continue;
+            if (skipPrefixes.Any(p => dir.StartsWith(p, StringComparison.OrdinalIgnoreCase))) continue;
             try
             {
                 foreach (var d in Directory.GetDirectories(dir))

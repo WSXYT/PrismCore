@@ -15,6 +15,7 @@ public sealed partial class MainWindow : Window
         ["Cleaner"] = typeof(Views.CleanerPage),
         ["Optimizer"] = typeof(Views.OptimizerPage),
         ["Toolbox"] = typeof(Views.ToolboxPage),
+        ["Update"] = typeof(Views.UpdatePage),
         ["Settings"] = typeof(Views.SettingsPage),
     };
 
@@ -51,11 +52,17 @@ public sealed partial class MainWindow : Window
             GlobalInfoBar.Severity = severity;
             GlobalInfoBar.IsOpen = true;
 
-            _infoBarTimer?.Stop();
-            _infoBarTimer = DispatcherQueue.CreateTimer();
-            _infoBarTimer.Interval = TimeSpan.FromSeconds(3);
-            _infoBarTimer.IsRepeating = false;
-            _infoBarTimer.Tick += (_, _) => GlobalInfoBar.IsOpen = false;
+            if (_infoBarTimer == null)
+            {
+                _infoBarTimer = DispatcherQueue.CreateTimer();
+                _infoBarTimer.Interval = TimeSpan.FromSeconds(3);
+                _infoBarTimer.IsRepeating = false;
+                _infoBarTimer.Tick += (_, _) => GlobalInfoBar.IsOpen = false;
+            }
+            else
+            {
+                _infoBarTimer.Stop();
+            }
             _infoBarTimer.Start();
         });
     }
@@ -70,6 +77,48 @@ public sealed partial class MainWindow : Window
         }
         DashboardVm?.Stop();
         Serilog.Log.CloseAndFlush();
+    }
+
+    /// <summary>显示全局通知（带操作按钮），不自动关闭。</summary>
+    public void ShowInfoWithAction(string title, string message, string actionText, Action action,
+        InfoBarSeverity severity = InfoBarSeverity.Informational)
+    {
+        DispatcherQueue.TryEnqueue(() =>
+        {
+            _infoBarTimer?.Stop();
+            GlobalInfoBar.Title = title;
+            GlobalInfoBar.Message = message;
+            GlobalInfoBar.Severity = severity;
+            var btn = new Button { Content = actionText };
+            btn.Click += (_, _) =>
+            {
+                GlobalInfoBar.IsOpen = false;
+                action();
+            };
+            GlobalInfoBar.ActionButton = btn;
+            GlobalInfoBar.IsOpen = true;
+        });
+    }
+
+    /// <summary>导航到指定页面标签。</summary>
+    public void NavigateTo(string tag)
+    {
+        if (_pageMap.TryGetValue(tag, out var pageType))
+        {
+            DispatcherQueue.TryEnqueue(() =>
+            {
+                ContentFrame.Navigate(pageType);
+                // 同步选中对应导航项
+                foreach (var item in NavView.MenuItems.OfType<NavigationViewItem>())
+                {
+                    if (item.Tag is string t && t == tag)
+                    {
+                        NavView.SelectedItem = item;
+                        break;
+                    }
+                }
+            });
+        }
     }
 
     /// <summary>从托盘恢复窗口并激活。</summary>

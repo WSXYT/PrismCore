@@ -76,12 +76,18 @@ public partial class CleanerViewModel : ObservableObject
         if (sysItems.Count > 0)
         {
             ScanStatus = "正在创建系统还原点...";
-            await Task.Run(() => SystemCleaner.CreateRestorePoint("PrismCore 系统清理前备份"));
+            var rpSeq = await Task.Run(() => SystemCleaner.CreateRestorePoint("PrismCore 系统清理前备份"));
 
             foreach (var item in sysItems)
             {
                 var (c, f) = await Task.Run(() => CleanSystemItem(item));
                 cleaned += c; failed += f;
+            }
+
+            // 清理全部成功后删除还原点，节省空间
+            if (failed == 0 && rpSeq >= 0)
+            {
+                await Task.Run(() => SystemCleaner.RemoveRestorePoint(rpSeq));
             }
         }
 
@@ -101,15 +107,15 @@ public partial class CleanerViewModel : ObservableObject
 
         var oldDrv = SystemCleaner.ListOldDrivers();
         if (oldDrv.Count > 0)
-            items.Add(new("$OLD_DRIVERS", oldDrv.Count, "old_drivers",
+            items.Add(new("$OLD_DRIVERS", 0, "old_drivers",
                 $"旧版驱动包 ({oldDrv.Count} 个)", false));
 
         var orphans = SystemCleaner.ScanOrphanRegistry();
         if (orphans.Count > 0)
-            items.Add(new("$ORPHAN_REGISTRY", orphans.Count, "orphan_registry",
+            items.Add(new("$ORPHAN_REGISTRY", 0, "orphan_registry",
                 $"孤立注册表项 ({orphans.Count} 个)", false));
 
-        if (SystemCleaner.QueryCompactOsStatus())
+        if (SystemCleaner.CanEnableCompactOs())
             items.Add(new("$COMPACT_OS", 0, "compact_os",
                 "CompactOS 压缩（可节省约 2GB）", false));
     }

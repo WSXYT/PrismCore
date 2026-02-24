@@ -234,27 +234,26 @@ public class ProBalanceEngine
             if (needed == 0) return FallbackTopology();
 
             var buf = new byte[needed];
+            var pCores = new List<int>();
+            var eCores = new List<int>();
             unsafe
             {
                 fixed (byte* ptr = buf)
                 {
                     if (!NativeApi.GetSystemCpuSetInformation((nint)ptr, needed, out needed, 0, 0))
                         return FallbackTopology();
-                }
-            }
 
-            var pCores = new List<int>();
-            var eCores = new List<int>();
-            int offset = 0;
-            int structSize = System.Runtime.InteropServices.Marshal.SizeOf<NativeApi.SYSTEM_CPU_SET_INFORMATION>();
-            while (offset + structSize <= needed)
-            {
-                var info = System.Runtime.InteropServices.Marshal.PtrToStructure<NativeApi.SYSTEM_CPU_SET_INFORMATION>(
-                    System.Runtime.InteropServices.Marshal.UnsafeAddrOfPinnedArrayElement(buf, offset));
-                if (info.Size == 0) break;
-                if (info.EfficiencyClass == 0) pCores.Add(info.LogicalProcessorIndex);
-                else eCores.Add(info.LogicalProcessorIndex);
-                offset += (int)info.Size;
+                    int offset = 0;
+                    int structSize = sizeof(NativeApi.SYSTEM_CPU_SET_INFORMATION);
+                    while (offset + structSize <= needed)
+                    {
+                        var info = *(NativeApi.SYSTEM_CPU_SET_INFORMATION*)(ptr + offset);
+                        if (info.Size == 0) break;
+                        if (info.EfficiencyClass == 0) pCores.Add(info.LogicalProcessorIndex);
+                        else eCores.Add(info.LogicalProcessorIndex);
+                        offset += (int)info.Size;
+                    }
+                }
             }
             return new(pCores.ToArray(), eCores.ToArray(), pCores.Count > 0 && eCores.Count > 0);
         }

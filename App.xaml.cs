@@ -1,5 +1,7 @@
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
 using PrismCore.Helpers;
+using PrismCore.Models;
 using Sentry;
 using Sentry.Protocol;
 using Serilog;
@@ -32,10 +34,12 @@ public partial class App : Application
             SentrySdk.Init(options =>
             {
                 options.Dsn = "https://7eca1824b7f02177b2432f1f977f742d@o4510289605296128.ingest.de.sentry.io/4510935602364496";
+#if DEBUG
                 options.Debug = true;
+#endif
                 options.AutoSessionTracking = true;
                 options.IsGlobalModeEnabled = true;
-                options.TracesSampleRate = 1.0;
+                options.TracesSampleRate = 0.2;
                 options.EnableLogs = true;
                 options.DisableWinUiUnhandledExceptionIntegration();
             });
@@ -85,6 +89,44 @@ public partial class App : Application
         _trayIcon.Create();
 
         Log.Information("PrismCore 已启动");
+
+        // 启动时自动更新检查
+        var updateMode = AppSettings.Instance.UpdateMode;
+        if (updateMode > 0)
+            _ = CheckUpdateOnStartupAsync(updateMode);
+    }
+
+    private static async Task CheckUpdateOnStartupAsync(int mode)
+    {
+        try
+        {
+            var svc = new UpdateService();
+            var update = await svc.CheckForUpdateAsync();
+            if (update == null) return;
+
+            var version = update.TargetFullRelease.Version.ToString();
+
+            if (mode == 1)
+            {
+                // 仅通知
+                MainWindow?.ShowInfoWithAction(
+                    "发现新版本",
+                    $"新版本 {version} 可用",
+                    "前往更新",
+                    () => MainWindow?.NavigateTo("Update"),
+                    InfoBarSeverity.Informational);
+            }
+            else if (mode == 2)
+            {
+                // 自动下载并安装
+                Log.Information("自动更新模式：开始下载 {Version}", version);
+                await svc.DownloadAndApplyAsync(update);
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "启动时自动更新检查失败");
+        }
     }
 
     [SecurityCritical]

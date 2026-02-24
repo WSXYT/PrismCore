@@ -18,8 +18,8 @@ public static class AutoOptimizer
         if (!File.Exists(path)) { AppSettings.Instance.PagefileInfo = null; return; }
         var method = info.TryGetValue("method", out var m) ? m?.ToString() ?? "" : "";
         _createdPagefiles[drive] = method;
-        _currentPagefileSizeMb = info.TryGetValue("size_mb", out var s) && s is System.Text.Json.JsonElement je
-            ? je.GetInt32() : 0;
+        _currentPagefileSizeMb = info.TryGetValue("size_mb", out var s)
+            && int.TryParse(s?.ToString(), out var sz) ? sz : 0;
     }
 
     public static int CalcHealthScore(double cpuPct = 0)
@@ -188,10 +188,11 @@ public static class AutoOptimizer
 
     private static void SavePagefileInfo(string drive, string method, int sizeMb)
     {
+        // 统一存储为字符串，避免 object 装箱后与 JsonElement 反序列化类型不一致
         AppSettings.Instance.PagefileInfo = new()
         {
             ["drive"] = drive, ["method"] = method,
-            ["size_mb"] = sizeMb, ["created_at"] = DateTime.Now.ToString("o")
+            ["size_mb"] = sizeMb.ToString(), ["created_at"] = DateTime.Now.ToString("o")
         };
     }
 
@@ -215,13 +216,5 @@ public static class AutoOptimizer
     }
 
     private static void RunCmd(string cmd)
-    {
-        var psi = new ProcessStartInfo("cmd.exe", $"/c {cmd}")
-        {
-            CreateNoWindow = true, UseShellExecute = false,
-            RedirectStandardOutput = true, RedirectStandardError = true
-        };
-        using var p = Process.Start(psi);
-        p?.WaitForExit(30000);
-    }
+        => Helpers.ProcessHelper.RunCmd(cmd);
 }

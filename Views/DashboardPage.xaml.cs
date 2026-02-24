@@ -7,6 +7,7 @@ namespace PrismCore.Views;
 public sealed partial class DashboardPage : Page
 {
     public DashboardViewModel ViewModel { get; }
+    private bool _started;
 
     public DashboardPage()
     {
@@ -21,7 +22,9 @@ public sealed partial class DashboardPage : Page
                 mw.ShowInfo("自动优化", msg, Microsoft.UI.Xaml.Controls.InfoBarSeverity.Informational);
         }
 
-        Loaded += (_, _) => ViewModel.Start();
-        Unloaded += (_, _) => ViewModel.Stop();
+        Loaded += (_, _) =>
+        {
+            if (!_started) { ViewModel.Start(); _started = true; }
+        };
     }
 }

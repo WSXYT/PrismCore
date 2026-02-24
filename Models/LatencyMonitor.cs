@@ -199,6 +199,7 @@ public class LatencyMonitor : IDisposable
         private readonly Dictionary<string, int[]> _stats = [];
         private readonly DriverMapper _mapper = new();
         private nint _propsBuf;
+        private nint _loggerNamePtr;
         private string _sessionName = SessionName;
         private GCHandle _callbackPin;
 
@@ -258,8 +259,8 @@ public class LatencyMonitor : IDisposable
         private unsafe bool OpenTrace()
         {
             var logfile = new NativeApi.EVENT_TRACE_LOGFILEW();
-            var namePtr = Marshal.StringToHGlobalUni(_sessionName);
-            logfile.LoggerName = namePtr;
+            _loggerNamePtr = Marshal.StringToHGlobalUni(_sessionName);
+            logfile.LoggerName = _loggerNamePtr;
             logfile.LogFileMode = NativeApi.PROCESS_TRACE_MODE_REAL_TIME
                 | NativeApi.PROCESS_TRACE_MODE_EVENT_RECORD;
 
@@ -273,11 +274,11 @@ public class LatencyMonitor : IDisposable
             Marshal.StructureToPtr(logfile, ptr, false);
             var handle = NativeApi.OpenTraceW(ptr);
             Marshal.FreeHGlobal(ptr);
-            Marshal.FreeHGlobal(namePtr);
 
             if (handle == NativeApi.INVALID_PROCESSTRACE_HANDLE)
             {
                 if (_callbackPin.IsAllocated) _callbackPin.Free();
+                Marshal.FreeHGlobal(_loggerNamePtr); _loggerNamePtr = 0;
                 return false;
             }
             _traceHandle = handle;
@@ -354,6 +355,11 @@ public class LatencyMonitor : IDisposable
                     NativeApi.EVENT_TRACE_CONTROL_STOP);
                 Marshal.FreeHGlobal(_propsBuf);
                 _propsBuf = 0;
+            }
+            if (_loggerNamePtr != 0)
+            {
+                Marshal.FreeHGlobal(_loggerNamePtr);
+                _loggerNamePtr = 0;
             }
             _sessionHandle = 0;
             if (_callbackPin.IsAllocated) _callbackPin.Free();

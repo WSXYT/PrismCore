@@ -38,6 +38,11 @@
                         <FontIcon Glyph="&#xE90F;"/>
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
+                <NavigationViewItem Content="更新" Tag="Update">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE895;"/>
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
             </NavigationView.MenuItems>
 
             <NavigationView.FooterMenuItems>

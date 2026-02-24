@@ -22,14 +22,8 @@ public static class SystemCleaner
     {
         try
         {
-            var psi = new ProcessStartInfo("Dism.exe", args)
-            {
-                CreateNoWindow = true, UseShellExecute = false,
-                RedirectStandardOutput = true, RedirectStandardError = true
-            };
-            using var p = Process.Start(psi);
-            p?.WaitForExit(600000);
-            return new(action, p?.ExitCode == 0, "组件存储清理完成");
+            var r = Helpers.ProcessHelper.Run("Dism.exe", args, 600000);
+            return new(action, r.Success, "组件存储清理完成");
         }
         catch (Exception e) { return new(action, false, $"清理失败: {e.Message}"); }
     }
@@ -40,15 +34,8 @@ public static class SystemCleaner
     {
         try
         {
-            var psi = new ProcessStartInfo("pnputil", "/enum-drivers")
-            {
-                CreateNoWindow = true, UseShellExecute = false,
-                RedirectStandardOutput = true, RedirectStandardError = true
-            };
-            using var p = Process.Start(psi);
-            if (p == null) return [];
-            var output = p.StandardOutput.ReadToEnd();
-            p.WaitForExit(60000);
+            var r = Helpers.ProcessHelper.Run("pnputil", "/enum-drivers", 60000);
+            var output = r.Output;
 
             var drivers = new List<Dictionary<string, string>>();
             foreach (var block in output.Split("\n\n", StringSplitOptions.RemoveEmptyEntries))
@@ -78,16 +65,7 @@ public static class SystemCleaner
 
     public static bool DeleteDriver(string infName)
     {
-        try
-        {
-            var psi = new ProcessStartInfo("pnputil", $"/delete-driver {infName}")
-            {
-                CreateNoWindow = true, UseShellExecute = false,
-                RedirectStandardOutput = true, RedirectStandardError = true
-            };
-            using var p = Process.Start(psi);
-            return p?.WaitForExit(30000) == true && p.ExitCode == 0;
-        }
+        try { return Helpers.ProcessHelper.Run("pnputil", $"/delete-driver {infName}").Success; }
         catch { return false; }
     }
 
@@ -107,32 +85,19 @@ public static class SystemCleaner
     {
         try
         {
-            var psi = new ProcessStartInfo("compact.exe", "/CompactOS:always")
-            {
-                CreateNoWindow = true, UseShellExecute = false,
-                RedirectStandardOutput = true, RedirectStandardError = true
-            };
-            using var p = Process.Start(psi);
-            p?.WaitForExit(600000);
-            return new("CompactOS", p?.ExitCode == 0, "系统文件已压缩");
+            var r = Helpers.ProcessHelper.Run("compact.exe", "/CompactOS:always", 600000);
+            return new("CompactOS", r.Success, "系统文件已压缩");
         }
         catch (Exception e) { return new("CompactOS", false, $"压缩失败: {e.Message}"); }
     }
 
-    public static bool QueryCompactOsStatus()
+    /// <summary>检查系统是否尚未启用 CompactOS 压缩（即可以启用压缩）。</summary>
+    public static bool CanEnableCompactOs()
     {
         try
         {
-            var psi = new ProcessStartInfo("compact.exe", "/CompactOS:query")
-            {
-                CreateNoWindow = true, UseShellExecute = false,
-                RedirectStandardOutput = true, RedirectStandardError = true
-            };
-            using var p = Process.Start(psi);
-            if (p == null) return false;
-            var output = p.StandardOutput.ReadToEnd();
-            p.WaitForExit(30000);
-            return output.Contains("未") || output.Contains("not", StringComparison.OrdinalIgnoreCase);
+            var r = Helpers.ProcessHelper.Run("compact.exe", "/CompactOS:query");
+            return r.Output.Contains("未") || r.Output.Contains("not", StringComparison.OrdinalIgnoreCase);
         }
         catch { return false; }
     }
@@ -275,7 +240,8 @@ public static class SystemCleaner
 
     // ── 系统还原点 ──
 
-    public static bool CreateRestorePoint(string description = "PrismCore 自动还原点")
+    /// <summary>创建系统还原点，返回序列号（失败返回 -1）。</summary>
+    public static long CreateRestorePoint(string description = "PrismCore 自动还原点")
     {
         var info = new NativeApi.RESTOREPTINFOW
         {
@@ -283,7 +249,15 @@ public static class SystemCleaner
             dwRestorePtType = NativeApi.APPLICATION_INSTALL,
             szDescription = description
         };
-        return NativeApi.SRSetRestorePointW(ref info, out _);
+        return NativeApi.SRSetRestorePointW(ref info, out var status) ? status.llSequenceNumber : -1;
+    }
+
+    /// <summary>删除指定序列号的还原点。</summary>
+    public static bool RemoveRestorePoint(long sequenceNumber)
+    {
+        if (sequenceNumber < 0) return false;
+        try { return NativeApi.SRRemoveRestorePoint((uint)sequenceNumber); }
+        catch { return false; }
     }
 
     private static long DirSize(string path)
@@ -315,13 +289,5 @@ public static class SystemCleaner
     public static List<Dictionary<string, string>> ScanOrphanRegistryInfo() => ScanOrphanRegistry();
 
     private static void RunCmd(string exe, string args)
-    {
-        var psi = new ProcessStartInfo(exe, args)
-        {
-            CreateNoWindow = true, UseShellExecute = false,
-            RedirectStandardOutput = true, RedirectStandardError = true
-        };
-        using var p = Process.Start(psi);
-        p?.WaitForExit(15000);
-    }
+        => Helpers.ProcessHelper.Run(exe, args, 15000);
 }

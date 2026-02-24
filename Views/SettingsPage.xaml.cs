@@ -10,20 +10,25 @@ public sealed partial class SettingsPage : Page
 
     public SettingsPage() => InitializeComponent();
 
+    private void NotifyDashboard()
+    {
+        if (App.MainWindow is { DashboardVm: { } vm }) vm.ReloadSettings();
+    }
+
     // 后台自动优化
-    public bool AutoOptimizeEnabled { get => _s.AutoOptimizeEnabled; set => _s.AutoOptimizeEnabled = value; }
-    public double MemoryThreshold { get => _s.MemoryThreshold; set => _s.MemoryThreshold = (int)value; }
-    public double AutoOptimizeInterval { get => _s.AutoOptimizeInterval; set => _s.AutoOptimizeInterval = (int)value; }
+    public bool AutoOptimizeEnabled { get => _s.AutoOptimizeEnabled; set { _s.AutoOptimizeEnabled = value; NotifyDashboard(); } }
+    public double MemoryThreshold { get => _s.MemoryThreshold; set { _s.MemoryThreshold = (int)value; NotifyDashboard(); } }
+    public double AutoOptimizeInterval { get => _s.AutoOptimizeInterval; set { _s.AutoOptimizeInterval = (int)value; NotifyDashboard(); } }
 
     // 虚拟内存
-    public bool AutoPagefileEnabled { get => _s.AutoPagefileEnabled; set => _s.AutoPagefileEnabled = value; }
-    public double PagefileExpandThreshold { get => _s.PagefileExpandThreshold; set => _s.PagefileExpandThreshold = (int)value; }
+    public bool AutoPagefileEnabled { get => _s.AutoPagefileEnabled; set { _s.AutoPagefileEnabled = value; NotifyDashboard(); } }
+    public double PagefileExpandThreshold { get => _s.PagefileExpandThreshold; set { _s.PagefileExpandThreshold = (int)value; NotifyDashboard(); } }
     public bool PagefileSuggestionEnabled { get => _s.PagefileSuggestionEnabled; set => _s.PagefileSuggestionEnabled = value; }
 
     // 智能调度
-    public bool ProBalanceEnabled { get => _s.ProBalanceEnabled; set => _s.ProBalanceEnabled = value; }
-    public double ProBalanceSystemThreshold { get => _s.ProBalanceSystemThreshold; set => _s.ProBalanceSystemThreshold = (int)value; }
-    public double ProBalanceProcessThreshold { get => _s.ProBalanceProcessThreshold; set => _s.ProBalanceProcessThreshold = (int)value; }
+    public bool ProBalanceEnabled { get => _s.ProBalanceEnabled; set { _s.ProBalanceEnabled = value; NotifyDashboard(); } }
+    public double ProBalanceSystemThreshold { get => _s.ProBalanceSystemThreshold; set { _s.ProBalanceSystemThreshold = (int)value; NotifyDashboard(); } }
+    public double ProBalanceProcessThreshold { get => _s.ProBalanceProcessThreshold; set { _s.ProBalanceProcessThreshold = (int)value; NotifyDashboard(); } }
 
     // 异常检测
     public bool AnomalyEnabled { get => _s.AnomalyEnabled; set => _s.AnomalyEnabled = value; }
@@ -36,7 +41,7 @@ public sealed partial class SettingsPage : Page
     public bool PageOutIdleEnabled { get => _s.PageOutIdleEnabled; set => _s.PageOutIdleEnabled = value; }
 
     // 系统监控
-    public bool DpcMonitorEnabled { get => _s.DpcMonitorEnabled; set => _s.DpcMonitorEnabled = value; }
+    public bool DpcMonitorEnabled { get => _s.DpcMonitorEnabled; set { _s.DpcMonitorEnabled = value; NotifyDashboard(); } }
 
     private async void ResetDefaults_Click(object sender, RoutedEventArgs e)
     {

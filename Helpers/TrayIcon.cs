@@ -42,6 +42,7 @@ public sealed class TrayIcon : IDisposable
 
         // 创建消息窗口
         _hWnd = CreateWindowExW(0, "PrismCoreTrayWnd", "", 0, 0, 0, 0, 0, HWND_MESSAGE, 0, hInstance, 0);
+        if (_hWnd == 0) return;
 
         // 添加托盘图标
         _nid = new NOTIFYICONDATAW

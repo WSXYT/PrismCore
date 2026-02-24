@@ -8,8 +8,9 @@ using PrismCore.Models;
 namespace PrismCore.ViewModels;
 
 /// <summary>首页视图模型（对照 dashboard_vm.py）。</summary>
-public partial class DashboardViewModel : ObservableObject
+public partial class DashboardViewModel : ObservableObject, IDisposable
 {
+    private bool _disposed;
     private readonly DispatcherQueueTimer _fastTimer;
     private readonly DispatcherQueueTimer _slowTimer;
     private readonly DispatcherQueueTimer _pbTimer;
@@ -116,6 +117,7 @@ public partial class DashboardViewModel : ObservableObject
 
     public void Stop()
     {
+        if (_disposed) return;
         _fastTimer.Stop();
         _slowTimer.Stop();
         _pbTimer.Stop();
@@ -170,7 +172,7 @@ public partial class DashboardViewModel : ObservableObject
         if (items.Count > 0)
         {
             var (cleaned, _) = await Task.Run(() => Cleaner.ExecuteClean(items));
-            if (cleaned > 0) actions.Add($"清理了 {cleaned / (1024 * 1024)} MB 垃圾");
+            if (cleaned > 0) actions.Add($"清理了 {SystemInfo.FormatBytes((ulong)cleaned)} 垃圾");
         }
 
         // 智能线性扩展分页文件（对照 Python _SmartOptimizeWorker.run 步骤5）
@@ -223,10 +225,20 @@ public partial class DashboardViewModel : ObservableObject
 
             HealthScore = AutoOptimizer.CalcHealthScore(CpuPercent);
 
-            // DPC/ISR
-            var lat = _latency.Sample();
-            DpcPercent = lat.DpcTimePercent;
-            IsrPercent = lat.IsrTimePercent;
+            // DPC/ISR（仅在启用时采样）
+            LatencyMonitor.LatencySnapshot lat;
+            if (AppSettings.Instance.DpcMonitorEnabled)
+            {
+                lat = _latency.Sample();
+                DpcPercent = lat.DpcTimePercent;
+                IsrPercent = lat.IsrTimePercent;
+            }
+            else
+            {
+                lat = new(0, 0, 0, false, [], [], false);
+                DpcPercent = 0;
+                IsrPercent = 0;
+            }
 
             // 响应延迟反馈闭环
             UpdateResponsivenessFeedback();
@@ -366,13 +378,15 @@ public partial class DashboardViewModel : ObservableObject
         var info = AppSettings.Instance.PagefileInfo;
         if (info == null) return;
         var drive = info.TryGetValue("drive", out var d) ? d?.ToString() ?? "" : "";
-        var sizeMb = info.TryGetValue("size_mb", out var s) && s is System.Text.Json.JsonElement je
-            ? je.GetInt32() : 0;
+        var sizeMb = ParseSizeMb(info);
         HasTempPagefile = true;
         TempPagefileDisplay = $"临时分页文件 {sizeMb} MB ({drive})";
         PagefileStatusChanged?.Invoke("active", sizeMb, drive);
         StartSuggestTimer();
     }
+
+    private static int ParseSizeMb(Dictionary<string, object> info)
+        => info.TryGetValue("size_mb", out var s) && int.TryParse(s?.ToString(), out var v) ? v : 0;
 
     private void StartSuggestTimer()
     {
@@ -448,8 +462,7 @@ public partial class DashboardViewModel : ObservableObject
         var info = AppSettings.Instance.PagefileInfo;
         if (info == null) return;
         var drive = info.TryGetValue("drive", out var d) ? d?.ToString() ?? "" : "";
-        var sizeMb = info.TryGetValue("size_mb", out var s) && s is System.Text.Json.JsonElement je
-            ? je.GetInt32() : 0;
+        var sizeMb = ParseSizeMb(info);
         HasTempPagefile = true;
         TempPagefileDisplay = $"临时分页文件 {sizeMb} MB ({drive})";
         PagefileStatusChanged?.Invoke("active", sizeMb, drive);
@@ -457,4 +470,11 @@ public partial class DashboardViewModel : ObservableObject
     }
 
     #endregion
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        Stop();
+    }
 }

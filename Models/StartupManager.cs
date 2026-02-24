@@ -50,23 +50,19 @@ public static class StartupManager
     {
         try
         {
-            var psi = new ProcessStartInfo("schtasks", "/Query /FO CSV /NH")
-            {
-                CreateNoWindow = true, UseShellExecute = false,
-                RedirectStandardOutput = true, RedirectStandardError = true
-            };
-            using var p = Process.Start(psi);
-            if (p == null) return;
-            var output = p.StandardOutput.ReadToEnd();
-            p.WaitForExit(30000);
+            var r = Helpers.ProcessHelper.Run("schtasks", "/Query /FO CSV /NH");
+            var output = r.Output;
 
             foreach (var line in output.Split('\n', StringSplitOptions.RemoveEmptyEntries))
             {
-                var parts = line.Trim().Trim('"').Split("\",\"");
+                var trimmed = line.Trim();
+                if (trimmed.Length < 2 || trimmed[0] != '"') continue;
+                // 解析 CSV：按 "," 分割（字段被双引号包裹）
+                var parts = trimmed[1..^1].Split("\",\"");
                 if (parts.Length < 3) continue;
-                var name = parts[0].Trim('"');
+                var name = parts[0];
                 if (string.IsNullOrEmpty(name) || name.StartsWith(@"\Microsoft")) continue;
-                var status = parts.Length > 2 ? parts[2].Trim('"') : "";
+                var status = parts.Length > 2 ? parts[2] : "";
                 var enabled = status is "Ready" or "就绪" or "Running" or "正在运行";
                 items.Add(new(name.Split('\\')[^1], "(计划任务)", "计划任务", name, enabled));
             }
@@ -103,16 +99,7 @@ public static class StartupManager
     public static bool ToggleStartupTask(StartupItem item, bool enable)
     {
         var action = enable ? "/ENABLE" : "/DISABLE";
-        try
-        {
-            var psi = new ProcessStartInfo("schtasks", $"/Change /TN \"{item.Location}\" {action}")
-            {
-                CreateNoWindow = true, UseShellExecute = false,
-                RedirectStandardOutput = true, RedirectStandardError = true
-            };
-            using var p = Process.Start(psi);
-            return p?.WaitForExit(15000) == true && p.ExitCode == 0;
-        }
+        try { return Helpers.ProcessHelper.Run("schtasks", $"/Change /TN \"{item.Location}\" {action}", 15000).Success; }
         catch { return false; }
     }
 }

@@ -9,7 +9,9 @@ public sealed class AppSettings
     public static AppSettings Instance => _instance.Value;
 
     private readonly string _filePath;
+    private readonly object _lock = new();
     private Dictionary<string, JsonElement> _data = [];
+    private CancellationTokenSource? _saveCts;
 
     private AppSettings()
     {
@@ -30,23 +32,42 @@ public sealed class AppSettings
         catch { _data = []; }
     }
 
+    private void DebounceSave()
+    {
+        _saveCts?.Cancel();
+        _saveCts = new CancellationTokenSource();
+        var token = _saveCts.Token;
+        Task.Delay(500, token).ContinueWith(_ => Save(), token, TaskContinuationOptions.OnlyOnRanToCompletion, TaskScheduler.Default);
+    }
+
     private void Save()
     {
-        try { File.WriteAllText(_filePath, JsonSerializer.Serialize(_data, new JsonSerializerOptions { WriteIndented = true })); }
+        string json;
+        lock (_lock)
+        {
+            json = JsonSerializer.Serialize(_data, new JsonSerializerOptions { WriteIndented = true });
+        }
+        try { File.WriteAllText(_filePath, json); }
         catch { /* 静默 */ }
     }
 
     private T Get<T>(string key, T defaultValue)
     {
-        if (!_data.TryGetValue(key, out var elem)) return defaultValue;
-        try { return elem.Deserialize<T>() ?? defaultValue; }
-        catch { return defaultValue; }
+        lock (_lock)
+        {
+            if (!_data.TryGetValue(key, out var elem)) return defaultValue;
+            try { return elem.Deserialize<T>() ?? defaultValue; }
+            catch { return defaultValue; }
+        }
     }
 
     private void Set<T>(string key, T value)
     {
-        _data[key] = JsonSerializer.SerializeToElement(value);
-        Save();
+        lock (_lock)
+        {
+            _data[key] = JsonSerializer.SerializeToElement(value);
+        }
+        DebounceSave();
     }
 
     // 后台自动优化
@@ -88,10 +109,14 @@ public sealed class AppSettings
     // 智能分页文件建议
     public bool PagefileSuggestionEnabled { get => Get("pagefile_suggestion", true); set => Set("pagefile_suggestion", value); }
 
+    // 更新模式：0=不检查, 1=仅检查, 2=自动安装
+    public int UpdateMode { get => Get("update_mode", 0); set => Set("update_mode", value); }
+
     /// <summary>恢复所有设置为默认值。</summary>
     public void ResetToDefaults()
     {
-        _data = [];
+        _saveCts?.Cancel();
+        lock (_lock) { _data = []; }
         Save();
     }
 }

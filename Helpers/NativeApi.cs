@@ -421,11 +421,17 @@ public static partial class NativeApi
         public long llSequenceNumber;
     }
 
+    // 保留 DllImport：RESTOREPTINFOW 含 ByValTStr 字段，LibraryImport 源生成器不支持
     [DllImport("srclient.dll", SetLastError = true, CharSet = CharSet.Unicode)]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static extern bool SRSetRestorePointW(ref RESTOREPTINFOW pRestorePtSpec, out STATEMGRSTATUS pSMgrStatus);
 
+    [DllImport("srclient.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool SRRemoveRestorePoint(uint dwRPNum);
+
     public const uint BEGIN_SYSTEM_CHANGE = 100;
+    public const uint END_SYSTEM_CHANGE = 101;
     public const uint APPLICATION_INSTALL = 0;
 
     #endregion
@@ -514,27 +520,28 @@ public static partial class NativeApi
         public string szTip;
     }
 
+    // 保留 DllImport：NOTIFYICONDATAW 含 ByValTStr 字段，LibraryImport 源生成器不支持
     [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static extern bool Shell_NotifyIconW(uint dwMessage, ref NOTIFYICONDATAW lpData);
 
-    [DllImport("user32.dll")]
-    public static extern nint CreatePopupMenu();
+    [LibraryImport("user32.dll")]
+    public static partial nint CreatePopupMenu();
 
-    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    [LibraryImport("user32.dll", StringMarshalling = StringMarshalling.Utf16)]
     [return: MarshalAs(UnmanagedType.Bool)]
-    public static extern bool InsertMenuW(nint hMenu, uint uPosition, uint uFlags, nuint uIDNewItem, string lpNewItem);
+    public static partial bool InsertMenuW(nint hMenu, uint uPosition, uint uFlags, nuint uIDNewItem, string lpNewItem);
 
-    [DllImport("user32.dll")]
+    [LibraryImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
-    public static extern bool TrackPopupMenu(nint hMenu, uint uFlags, int x, int y, int nReserved, nint hWnd, nint prcRect);
+    public static partial bool TrackPopupMenu(nint hMenu, uint uFlags, int x, int y, int nReserved, nint hWnd, nint prcRect);
 
-    [DllImport("user32.dll")]
+    [LibraryImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
-    public static extern bool DestroyMenu(nint hMenu);
+    public static partial bool DestroyMenu(nint hMenu);
 
-    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
-    public static extern nint LoadImageW(nint hInst, string name, uint type, int cx, int cy, uint fuLoad);
+    [LibraryImport("user32.dll", StringMarshalling = StringMarshalling.Utf16)]
+    public static partial nint LoadImageW(nint hInst, string name, uint type, int cx, int cy, uint fuLoad);
 
     [LibraryImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
@@ -577,11 +584,12 @@ public static partial class NativeApi
         public nint hIconSm;
     }
 
+    // 保留 DllImport：WNDCLASSEXW 含 string 字段，LibraryImport 源生成器不支持自动封送结构体内的字符串指针
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     public static extern ushort RegisterClassExW(ref WNDCLASSEXW lpwcx);
 
-    [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-    public static extern nint CreateWindowExW(
+    [LibraryImport("user32.dll", StringMarshalling = StringMarshalling.Utf16, SetLastError = true)]
+    public static partial nint CreateWindowExW(
         uint dwExStyle, string lpClassName, string lpWindowName, uint dwStyle,
         int x, int y, int nWidth, int nHeight,
         nint hWndParent, nint hMenu, nint hInstance, nint lpParam);

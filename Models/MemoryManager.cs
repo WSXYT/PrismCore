@@ -118,8 +118,8 @@ public static class MemoryManager
     public static int RecommendPagefileMb()
     {
         var mem = GetMemoryStatus();
-        var recommended = (int)(mem.TotalBytes * 1.5 / (1024 * 1024));
-        return Math.Min(recommended, 32768);
+        var recommended = (long)(mem.TotalBytes * 1.5 / (1024 * 1024));
+        return (int)Math.Min(recommended, 32768);
     }
 
     /// <summary>通过 wmic 调整系统页面文件大小。</summary>
@@ -128,14 +128,8 @@ public static class MemoryManager
         try
         {
             var escaped = drive.Replace("\\", "\\\\");
-            var psi = new ProcessStartInfo("cmd.exe",
-                $"/c wmic pagefileset where name=\"{escaped}\\\\pagefile.sys\" set InitialSize={sizeMb},MaximumSize={sizeMb}")
-            {
-                CreateNoWindow = true, UseShellExecute = false,
-                RedirectStandardOutput = true, RedirectStandardError = true
-            };
-            using var p = Process.Start(psi);
-            return p?.WaitForExit(30000) == true && p.ExitCode == 0;
+            return Helpers.ProcessHelper.RunCmd(
+                $"wmic pagefileset where name=\"{escaped}\\\\pagefile.sys\" set InitialSize={sizeMb},MaximumSize={sizeMb}").Success;
         }
         catch { return false; }
     }
