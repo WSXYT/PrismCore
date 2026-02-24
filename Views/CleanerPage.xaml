@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="PrismCore.Views.CleanerPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <ScrollViewer Padding="32,24">
+        <StackPanel Spacing="16">
+            <TextBlock Text="系统清理" Style="{StaticResource TitleTextBlockStyle}"/>
+            <TextBlock Text="扫描并清理临时文件、应用缓存和系统垃圾"
+                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+
+            <!-- 操作栏 -->
+            <StackPanel Orientation="Horizontal" Spacing="12">
+                <Button Content="快速扫描" Style="{StaticResource AccentButtonStyle}"
+                        Click="OnQuickScan"/>
+                <Button Content="深度扫描" Click="OnDeepScan"/>
+                <Button Content="清理已选" Command="{x:Bind ViewModel.CleanCommand}"/>
+            </StackPanel>
+
+            <!-- 进度 -->
+            <ProgressBar IsIndeterminate="True"
+                         Visibility="{x:Bind ViewModel.IsScanning, Mode=OneWay}"/>
+            <TextBlock Text="{x:Bind ViewModel.ScanStatus, Mode=OneWay}"
+                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+
+            <!-- 汇总 -->
+            <TextBlock Text="{x:Bind ViewModel.TotalSizeText, Mode=OneWay}"
+                       Style="{StaticResource BodyStrongTextBlockStyle}"/>
+
+            <!-- 扫描结果列表 -->
+            <ListView ItemsSource="{x:Bind ViewModel.ScanItems, Mode=OneWay}"
+                      SelectionMode="None">
+                <ListView.ItemTemplate>
+                    <DataTemplate>
+                        <Grid Padding="8,6" ColumnDefinitions="Auto,*,Auto">
+                            <CheckBox IsChecked="{Binding Selected, Mode=TwoWay}"
+                                      VerticalAlignment="Center"/>
+                            <StackPanel Grid.Column="1" Margin="8,0" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding Description}"/>
+                                <TextBlock Text="{Binding Category}" FontSize="12"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                            </StackPanel>
+                            <TextBlock Grid.Column="2" VerticalAlignment="Center"
+                                       Text="{Binding SizeText}"/>
+                        </Grid>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

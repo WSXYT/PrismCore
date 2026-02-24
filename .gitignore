@@ -1,0 +1,28 @@
+# Build outputs
+bin/
+obj/
+artifacts/
+
+# IDE
+.vs/
+.idea/
+*.user
+*.suo
+*.DotSettings.user
+
+# MSIX
+BundleArtifacts/
+AppPackages/
+
+# Temporary key
+*.pfx
+
+# OS
+Thumbs.db
+Desktop.ini
+
+# Logs
+logs/
+
+# Qodana
+qodana.yaml

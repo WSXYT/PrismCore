@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Window
+    x:Class="PrismCore.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="PrismCore">
+
+    <Window.SystemBackdrop>
+        <MicaBackdrop />
+    </Window.SystemBackdrop>
+
+    <Grid>
+        <NavigationView x:Name="NavView"
+                        IsBackButtonVisible="Collapsed"
+                        IsSettingsVisible="False"
+                        IsTitleBarAutoPaddingEnabled="False"
+                        PaneDisplayMode="Left"
+                        SelectionChanged="NavView_SelectionChanged">
+
+            <NavigationView.MenuItems>
+                <NavigationViewItem Content="首页" Tag="Dashboard">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE80F;"/>
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem Content="清理" Tag="Cleaner">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE74D;"/>
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem Content="加速" Tag="Optimizer">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE945;"/>
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem Content="工具箱" Tag="Toolbox">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE90F;"/>
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+            </NavigationView.MenuItems>
+
+            <NavigationView.FooterMenuItems>
+                <NavigationViewItem Content="设置" Tag="Settings">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE713;"/>
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+            </NavigationView.FooterMenuItems>
+
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="48"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <!-- 自定义标题栏 -->
+                <Grid x:Name="AppTitleBar" Height="48">
+                    <StackPanel Orientation="Horizontal" Spacing="12"
+                                VerticalAlignment="Center" Margin="16,0">
+                        <FontIcon Glyph="&#xE946;" FontSize="16"/>
+                        <TextBlock Text="PrismCore" FontSize="13"
+                                   VerticalAlignment="Center"
+                                   Style="{StaticResource CaptionTextBlockStyle}"/>
+                    </StackPanel>
+                </Grid>
+
+                <InfoBar x:Name="GlobalInfoBar" Grid.Row="1" IsOpen="False"/>
+                <Frame x:Name="ContentFrame" Grid.Row="2"/>
+            </Grid>
+        </NavigationView>
+    </Grid>
+</Window>

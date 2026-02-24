@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "PrismCore (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "PrismCore (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}
