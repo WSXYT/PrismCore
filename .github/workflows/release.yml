@@ -25,7 +25,7 @@ jobs:
     if: >-
       github.event_name == 'workflow_dispatch' ||
       startsWith(github.ref, 'refs/tags/v') ||
-      contains(github.event.head_commit.message, '开始打包')
+      (contains(github.event.head_commit.message, '开始打包') && !startsWith(github.ref, 'refs/tags/'))
     strategy:
       matrix:
         include:
@@ -66,6 +66,7 @@ jobs:
         run: dotnet tool install -g vpk
 
       - name: 发布
+        timeout-minutes: 20
         run: >
           dotnet publish ${{ env.PROJECT }}
           -c Release
@@ -73,6 +74,8 @@ jobs:
           -p:Platform=${{ matrix.platform }}
           -p:WindowsPackageType=None
           -p:SelfContained=true
+          -p:PublishReadyToRun=true
+          -p:CrossgenParallelism=1
           --output publish/${{ matrix.rid }}
 
       - name: Velopack 打包
