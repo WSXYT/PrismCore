@@ -36,7 +36,7 @@ public sealed class UpdateService
     private const string ProxyBaseUrl = "https://gemini.435535.xyz";
 
     /// <summary>
-    /// 更新源列表，按优先级排列。代理优先，直连备用。
+    /// 更新源列表，按优先级排列。代理优先，直连备用
     /// </summary>
     private static readonly Func<IUpdateSource>[] Sources =
     [
