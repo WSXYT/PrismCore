@@ -40,8 +40,8 @@ public sealed class UpdateService
     /// </summary>
     private static readonly Func<IUpdateSource>[] Sources =
     [
-        () => new GithubSource(RepoUrl, null, false, new ProxyFileDownloader(ProxyBaseUrl)),
-        () => new GithubSource(RepoUrl, null, false),
+        () => new GithubSource(RepoUrl, null, true, new ProxyFileDownloader(ProxyBaseUrl)),
+        () => new GithubSource(RepoUrl, null, true),
     ];
 
     private UpdateManager? _manager;
@@ -53,7 +53,7 @@ public sealed class UpdateService
     {
         try
         {
-            var mgr = new UpdateManager(new GithubSource(RepoUrl, null, false));
+            var mgr = new UpdateManager(new GithubSource(RepoUrl, null, true));
             if (mgr.CurrentVersion is { } v) return v.ToString();
         }
         catch { /* 非 Velopack 安装环境 */ }
