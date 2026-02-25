@@ -17,7 +17,6 @@ env:
   PROJECT: PrismCore.csproj
   PACK_ID: PrismCore
   ICON: Assets/app.ico
-  ADMIN_MANIFEST: artifacts/setup-admin.manifest
 
 jobs:
   build:
@@ -104,17 +103,6 @@ jobs:
           --channel ${{ matrix.rid }}
           --shortcuts Desktop,StartMenuRoot
 
-      - name: 嵌入管理员 manifest 到 Setup.exe
-        shell: pwsh
-        run: |
-          $mtExe = Get-ChildItem "C:\Program Files (x86)\Windows Kits\10\bin\*\x64\mt.exe" -Recurse |
-                   Sort-Object FullName -Descending | Select-Object -First 1
-          if (-not $mtExe) { throw "mt.exe not found" }
-          Get-ChildItem Releases\*-Setup.exe | ForEach-Object {
-            Write-Host "嵌入 manifest: $($_.Name)"
-            & $mtExe.FullName -manifest ${{ env.ADMIN_MANIFEST }} "-outputresource:$($_.FullName);#1" -nologo
-          }
-
       - name: 上传产物
         uses: actions/upload-artifact@v4
         with:
@@ -147,8 +135,7 @@ jobs:
             | `PrismCore-*-win-arm64-Setup.exe` | ARM64（Surface Pro X、骁龙笔记本等） |
             | `PrismCore-*-win-x86-Setup.exe` | 32 位系统 |
 
-            双击 Setup.exe 安装，系统会弹出 UAC 提权提示，确认后自动完成安装。
-            安装后桌面和开始菜单会创建快捷方式。
+            双击 Setup.exe 即可安装，安装后桌面和开始菜单会创建快捷方式。
 
             ### 增量更新包（应用内自动使用）
             - `*.nupkg` — Velopack 增量更新包，已安装用户通过应用内更新功能自动下载

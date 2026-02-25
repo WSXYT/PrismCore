@@ -19,6 +19,7 @@
     <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
     <NoWarn>$(NoWarn);MVVMTK0045</NoWarn>
     <DefineConstants>$(DefineConstants);DISABLE_XAML_GENERATED_MAIN</DefineConstants>
+    <StartupObject>PrismCore.Program</StartupObject>
   </PropertyGroup>
 
   <ItemGroup>

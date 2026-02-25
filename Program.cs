@@ -1,3 +1,6 @@
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Security.Principal;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.Win32;
@@ -16,6 +19,7 @@ public static class Program
     public static void Main(string[] args)
     {
         // Velopack 必须在最前面，处理安装、卸载、更新等钩子
+        // 钩子以普通权限运行（asInvoker），不会触发"请求需要提升"
         VelopackApp.Build()
             .OnAfterInstallFastCallback(v => RegisterUninstall(v.ToString()))
             .OnAfterUpdateFastCallback(v => RegisterUninstall(v.ToString()))
@@ -23,7 +27,27 @@ public static class Program
             .OnFirstRun(v => { })
             .Run();
 
-        // 启动 WinUI 应用
+        // 正常启动时，若未提权则自提权后退出当前进程
+        if (!IsElevated())
+        {
+            try
+            {
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = Environment.ProcessPath!,
+                    Arguments = string.Join(' ', args),
+                    UseShellExecute = true,
+                    Verb = "runas"
+                });
+            }
+            catch (Win32Exception)
+            {
+                // 用户拒绝了 UAC，静默退出
+            }
+            return;
+        }
+
+        // 以管理员身份启动 WinUI 应用
         global::WinRT.ComWrappersSupport.InitializeComWrappers();
         Application.Start(p =>
         {
@@ -34,14 +58,21 @@ public static class Program
         });
     }
 
-    /// <summary>在"添加或删除程序"中注册卸载入口。</summary>
+    private static bool IsElevated()
+    {
+        using var identity = WindowsIdentity.GetCurrent();
+        var principal = new WindowsPrincipal(identity);
+        return principal.IsInRole(WindowsBuiltInRole.Administrator);
+    }
+
+    /// <summary>在"添加或删除程序"中注册卸载入口（HKCU，无需提权）。</summary>
     private static void RegisterUninstall(string version)
     {
         var installDir = Path.GetDirectoryName(Environment.ProcessPath)!;
         var updateExe = Path.Combine(installDir, "..", "Update.exe");
         var iconPath = Environment.ProcessPath!;
 
-        using var key = Registry.LocalMachine.CreateSubKey(UninstallKey);
+        using var key = Registry.CurrentUser.CreateSubKey(UninstallKey);
         key.SetValue("DisplayName", "PrismCore");
         key.SetValue("DisplayVersion", version);
         key.SetValue("DisplayIcon", iconPath);
@@ -55,7 +86,6 @@ public static class Program
     /// <summary>卸载时清理注册表。</summary>
     private static void RemoveUninstall()
     {
-        try { Registry.LocalMachine.DeleteSubKeyTree(UninstallKey, false); }
-        catch { /* 静默 */ }
+        try { Registry.CurrentUser.DeleteSubKeyTree(UninstallKey, false); } catch { }
     }
 }
