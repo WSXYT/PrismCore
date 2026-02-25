@@ -31,9 +31,18 @@ public sealed partial class MainWindow : Window
         Title = "PrismCore";
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(AppTitleBar);
+        SetWindowIcon();
         Closed += OnClosed;
         // 默认选中首页
         NavView.SelectedItem = NavView.MenuItems[0];
+    }
+
+    /// <summary>设置窗口任务栏图标。</summary>
+    private void SetWindowIcon()
+    {
+        var iconPath = Path.Combine(AppContext.BaseDirectory, "Assets", "app.ico");
+        if (File.Exists(iconPath))
+            AppWindow.SetIcon(iconPath);
     }
 
     private void NavView_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)

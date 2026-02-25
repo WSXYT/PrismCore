@@ -53,10 +53,15 @@ public partial class UpdateViewModel : ObservableObject
             }
             else
             {
-                LatestVersion = "—";
+                LatestVersion = CurrentVersion;
                 IsUpToDate = true;
                 StatusMessage = "已是最新版本";
             }
+        }
+        catch (InvalidOperationException)
+        {
+            LatestVersion = "不可用";
+            StatusMessage = "当前为非安装版本，无法检查更新";
         }
         catch (Exception ex)
         {

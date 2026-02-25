@@ -54,7 +54,7 @@ public sealed class UpdateService
         try
         {
             var mgr = new UpdateManager(new GithubSource(RepoUrl, null, true));
-            if (mgr.CurrentVersion is { } v) return v.ToString();
+            if (mgr.IsInstalled && mgr.CurrentVersion is { } v) return v.ToString();
         }
         catch { /* 非 Velopack 安装环境 */ }
 
@@ -62,7 +62,25 @@ public sealed class UpdateService
     }
 
     /// <summary>
-    /// 检查更新，自动尝试多个源
+    /// 当前是否为 Velopack 安装环境
+    /// </summary>
+    public static bool IsVelopackInstalled
+    {
+        get
+        {
+            try
+            {
+                var mgr = new UpdateManager(new GithubSource(RepoUrl, null, true));
+                return mgr.IsInstalled;
+            }
+            catch { return false; }
+        }
+    }
+
+    /// <summary>
+    /// 检查更新，自动尝试多个源。
+    /// 返回 UpdateInfo（有新版本）或 null（已是最新）。
+    /// 非安装环境抛出 InvalidOperationException。
     /// </summary>
     public async Task<UpdateInfo?> CheckForUpdateAsync()
     {
@@ -74,10 +92,7 @@ public sealed class UpdateService
                 _manager = new UpdateManager(source);
 
                 if (!_manager.IsInstalled)
-                {
-                    Log.Warning("应用未通过安装包安装，跳过更新检查");
-                    return null;
-                }
+                    throw new InvalidOperationException("应用未通过 Velopack 安装包安装，无法检查更新");
 
                 var update = await _manager.CheckForUpdatesAsync();
                 if (update != null)
@@ -86,6 +101,7 @@ public sealed class UpdateService
 
                 return update;
             }
+            catch (InvalidOperationException) { throw; }
             catch (Exception ex)
             {
                 Log.Warning(ex, "更新源 #{Index} 检查失败，尝试下一个", i);
@@ -93,7 +109,7 @@ public sealed class UpdateService
         }
 
         Log.Error("所有更新源均不可用，无法检查更新");
-        return null;
+        throw new Exception("所有更新源均不可用");
     }
 
     /// <summary>
