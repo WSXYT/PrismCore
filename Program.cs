@@ -35,7 +35,7 @@ public static class Program
                 Process.Start(new ProcessStartInfo
                 {
                     FileName = Environment.ProcessPath!,
-                    Arguments = string.Join(' ', args),
+                    Arguments = string.Join(' ', args.Select(a => a.Contains(' ') ? $"\"{a}\"" : a)),
                     UseShellExecute = true,
                     Verb = "runas"
                 });

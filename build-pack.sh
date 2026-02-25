@@ -29,6 +29,7 @@ for i in "${!RIDS[@]}"; do
     -p:Platform="$PLAT" \
     -p:WindowsPackageType=None \
     -p:SelfContained=true \
+    -p:PublishReadyToRun=true \
     --output "$PUBLISH_DIR"
 
   echo "--- [${RID}] 打包中 ---"

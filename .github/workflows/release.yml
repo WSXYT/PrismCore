@@ -59,7 +59,6 @@ jobs:
           elif [[ "$GITHUB_REF" == refs/tags/v* ]]; then
             echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
           else
-            # 从 csproj 读取版本号
             VER=$(sed -n 's/.*<Version>\(.*\)<\/Version>.*/\1/p' ${{ env.PROJECT }})
             if [ -z "$VER" ]; then
               echo "::error::csproj 中未找到 <Version> 标签"
@@ -73,11 +72,18 @@ jobs:
           dotnet-version: '10.0.x'
           dotnet-quality: 'preview'
 
+      - name: NuGet 缓存
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ matrix.rid }}-${{ hashFiles('**/*.csproj') }}
+          restore-keys: nuget-${{ matrix.rid }}-
+
       - name: 安装 Velopack CLI
-        run: dotnet tool install -g vpk
+        run: dotnet tool install -g vpk --version 0.0.1298
 
       - name: 发布
-        timeout-minutes: 45
+        timeout-minutes: 30
         run: >
           dotnet publish ${{ env.PROJECT }}
           -c Release
@@ -86,7 +92,6 @@ jobs:
           -p:WindowsPackageType=None
           -p:SelfContained=true
           -p:PublishReadyToRun=true
-          -p:CrossgenParallelism=1
           --output publish/${{ matrix.rid }}
 
       - name: Velopack 打包
@@ -108,6 +113,7 @@ jobs:
         with:
           name: release-${{ matrix.rid }}
           path: Releases/*
+          retention-days: 14
 
   release:
     needs: build
@@ -124,22 +130,21 @@ jobs:
       - name: 创建 GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          name: PrismCore 新版本 - ${{ github.ref_name }}
+          name: PrismCore ${{ github.ref_name }}
           body: |
-            ## 产物说明
-
-            ### 安装包（首次安装）
+            ## 安装包（首次安装）
             | 文件 | 适用架构 |
             |------|----------|
             | `PrismCore-*-win-x64-Setup.exe` | 64 位 Intel/AMD（大多数电脑） |
             | `PrismCore-*-win-arm64-Setup.exe` | ARM64（Surface Pro X、骁龙笔记本等） |
             | `PrismCore-*-win-x86-Setup.exe` | 32 位系统 |
 
-            双击 Setup.exe 即可安装，安装后桌面和开始菜单会创建快捷方式。
+            双击 Setup.exe 即可安装，首次启动会弹出管理员权限确认。
+            安装后桌面和开始菜单会创建快捷方式。
 
-            ### 增量更新包（应用内自动使用）
-            - `*.nupkg` — Velopack 增量更新包，已安装用户通过应用内更新功能自动下载
-            - `releases.*.json` — 更新索引文件，供客户端检查版本
+            ## 增量更新包（应用内自动使用）
+            - `*.nupkg` — Velopack 增量更新包
+            - `releases.*.json` — 更新索引文件
 
             > 普通用户只需下载对应架构的 **Setup.exe** 即可。
           files: artifacts/*
