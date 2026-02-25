@@ -12,7 +12,7 @@
     <UseWinUI>true</UseWinUI>
     <WindowsPackageType>MSIX</WindowsPackageType>
     <EnableMsixTooling>true</EnableMsixTooling>
-    <Version>0.0.1-beta.2</Version>
+    <Version>0.0.1</Version>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>

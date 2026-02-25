@@ -66,6 +66,7 @@ public partial class UpdateViewModel : ObservableObject
         catch (Exception ex)
         {
             Log.Error(ex, "检查更新失败");
+            LatestVersion = "检查失败";
             StatusMessage = "检查更新失败";
         }
         finally
