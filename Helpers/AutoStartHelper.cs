@@ -16,9 +16,15 @@ public static class AutoStartHelper
         try
         {
             if (enable)
+            {
                 CreateTask(silent);
+                Log.Information("开机自启动任务已创建（静默={Silent}）", silent);
+            }
             else
+            {
                 DeleteTask();
+                Log.Information("开机自启动任务已删除");
+            }
         }
         catch (Exception ex)
         {
@@ -98,7 +104,11 @@ public static class AutoStartHelper
             if (proc?.ExitCode != 0)
             {
                 var err = proc?.StandardError.ReadToEnd();
-                Log.Warning("schtasks 创建任务失败: {Error}", err);
+                Log.Warning("schtasks 创建任务失败（ExitCode={Code}）: {Error}", proc?.ExitCode, err);
+            }
+            else
+            {
+                Log.Debug("schtasks 任务创建成功: {TaskName}", TaskName);
             }
         }
         finally

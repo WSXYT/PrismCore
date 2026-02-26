@@ -1,12 +1,20 @@
+﻿using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using PrismCore.Helpers;
 using PrismCore.Models;
+using Serilog;
+
 namespace PrismCore.Views;
 
-public sealed partial class SettingsPage : Page
+public sealed partial class SettingsPage : Page, INotifyPropertyChanged
 {
     private readonly AppSettings _s = AppSettings.Instance;
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+    private void OnPropertyChanged([CallerMemberName] string? name = null)
+        => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
 
     public SettingsPage() => InitializeComponent();
 
@@ -18,6 +26,9 @@ public sealed partial class SettingsPage : Page
         {
             _s.AutoStartEnabled = value;
             AutoStartHelper.SetAutoStart(value, _s.SilentStartEnabled);
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(SilentStartEnabled));
+            Log.Information("开机自启动已{State}", value ? "开启" : "关闭");
         }
     }
 
@@ -30,6 +41,8 @@ public sealed partial class SettingsPage : Page
             // 更新任务计划中的 --silent 参数
             if (_s.AutoStartEnabled)
                 AutoStartHelper.SetAutoStart(true, value);
+            OnPropertyChanged();
+            Log.Information("静默启动已{State}", value ? "开启" : "关闭");
         }
     }
 

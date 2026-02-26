@@ -120,7 +120,7 @@ public partial class App : Application
         });
         _trayIcon.Create();
 
-        Log.Information("PrismCore 已启动");
+        Log.Information("PrismCore 已启动（静默模式={IsSilent}）", Program.IsSilentStart);
 
         // 启动时自动更新检查
         var updateMode = AppSettings.Instance.UpdateMode;
