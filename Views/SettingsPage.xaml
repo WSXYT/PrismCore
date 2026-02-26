@@ -29,8 +29,7 @@
                         <TextBlock Text="开机启动后最小化到系统托盘，不显示主窗口" FontSize="12"
                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
                     </StackPanel>
-                    <ToggleSwitch Grid.Column="1" IsOn="{x:Bind SilentStartEnabled, Mode=TwoWay}" MinWidth="0"
-                                  IsEnabled="{x:Bind AutoStartEnabled, Mode=OneWay}"/>
+                    <ToggleSwitch x:Name="SilentStartToggle" Grid.Column="1" IsOn="{x:Bind SilentStartEnabled, Mode=TwoWay}" MinWidth="0"/>
                 </Grid>
             </Border>
 

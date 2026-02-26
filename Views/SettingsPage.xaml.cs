@@ -16,7 +16,11 @@ public sealed partial class SettingsPage : Page, INotifyPropertyChanged
     private void OnPropertyChanged([CallerMemberName] string? name = null)
         => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
 
-    public SettingsPage() => InitializeComponent();
+    public SettingsPage()
+    {
+        InitializeComponent();
+        SilentStartToggle.IsEnabled = _s.AutoStartEnabled;
+    }
 
     // 开机自启动
     public bool AutoStartEnabled
@@ -24,10 +28,11 @@ public sealed partial class SettingsPage : Page, INotifyPropertyChanged
         get => _s.AutoStartEnabled;
         set
         {
+            if (_s.AutoStartEnabled == value) return;
             _s.AutoStartEnabled = value;
             AutoStartHelper.SetAutoStart(value, _s.SilentStartEnabled);
+            SilentStartToggle.IsEnabled = value;
             OnPropertyChanged();
-            OnPropertyChanged(nameof(SilentStartEnabled));
             Log.Information("开机自启动已{State}", value ? "开启" : "关闭");
         }
     }
@@ -37,6 +42,7 @@ public sealed partial class SettingsPage : Page, INotifyPropertyChanged
         get => _s.SilentStartEnabled;
         set
         {
+            if (_s.SilentStartEnabled == value) return;
             _s.SilentStartEnabled = value;
             // 更新任务计划中的 --silent 参数
             if (_s.AutoStartEnabled)
