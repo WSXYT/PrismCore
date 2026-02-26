@@ -8,17 +8,21 @@ using Serilog;
 using System.IO;
 using System.Security;
 using System.Threading;
+using PrismCore.ViewModels;
 using UnhandledExceptionEventArgs = Microsoft.UI.Xaml.UnhandledExceptionEventArgs;
 
 namespace PrismCore;
 
 public partial class App : Application
 {
-    private Window? _window;
     private static Mutex? _mutex;
     private TrayIcon? _trayIcon;
+    private Microsoft.UI.Dispatching.DispatcherQueue? _dispatcherQueue;
 
     public static MainWindow? MainWindow { get; private set; }
+
+    /// <summary>后台优化 ViewModel（静默启动时独立于窗口运行）。</summary>
+    public static DashboardViewModel? BackgroundVm { get; private set; }
 
     private static readonly string LogPath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -72,19 +76,47 @@ public partial class App : Application
             return;
         }
 
-        _window = new MainWindow();
-        MainWindow = (MainWindow)_window;
-        _window.Activate();
+        _dispatcherQueue = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();
+
+        if (!Program.IsSilentStart)
+        {
+            EnsureMainWindow();
+            MainWindow!.Activate();
+        }
+
+        // 静默启动时，独立启动后台优化
+        if (Program.IsSilentStart)
+        {
+            BackgroundVm = new DashboardViewModel(_dispatcherQueue!);
+            BackgroundVm.Start();
+        }
 
         // 创建系统托盘图标
         _trayIcon = new TrayIcon();
-        _trayIcon.ShowRequested += () => MainWindow.DispatcherQueue.TryEnqueue(() => MainWindow.ShowAndActivate());
-        _trayIcon.OptimizeRequested += () => MainWindow.DispatcherQueue.TryEnqueue(() => MainWindow.DashboardVm?.SmartOptimizeCommand.Execute(null));
-        _trayIcon.ExitRequested += () => MainWindow.DispatcherQueue.TryEnqueue(() =>
+        _trayIcon.ShowRequested += () => _dispatcherQueue.TryEnqueue(() =>
         {
-            MainWindow.IsExiting = true;
-            _trayIcon?.Dispose();
-            MainWindow.Close();
+            EnsureMainWindow();
+            MainWindow!.ShowAndActivate();
+        });
+        _trayIcon.OptimizeRequested += () => _dispatcherQueue.TryEnqueue(() =>
+        {
+            var vm = BackgroundVm ?? MainWindow?.DashboardVm;
+            vm?.SmartOptimizeCommand.Execute(null);
+        });
+        _trayIcon.ExitRequested += () => _dispatcherQueue.TryEnqueue(() =>
+        {
+            BackgroundVm?.Stop();
+            if (MainWindow != null)
+            {
+                MainWindow.IsExiting = true;
+                _trayIcon?.Dispose();
+                MainWindow.Close();
+            }
+            else
+            {
+                _trayIcon?.Dispose();
+                Environment.Exit(0);
+            }
         });
         _trayIcon.Create();
 
@@ -94,6 +126,13 @@ public partial class App : Application
         var updateMode = AppSettings.Instance.UpdateMode;
         if (updateMode > 0)
             _ = CheckUpdateOnStartupAsync(updateMode);
+    }
+
+    /// <summary>确保 MainWindow 已创建（延迟创建，用于静默启动场景）。</summary>
+    private void EnsureMainWindow()
+    {
+        if (MainWindow != null) return;
+        MainWindow = new MainWindow();
     }
 
     private static async Task CheckUpdateOnStartupAsync(int mode)

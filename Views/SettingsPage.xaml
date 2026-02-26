@@ -8,6 +8,32 @@
         <StackPanel Spacing="4">
             <TextBlock Text="设置" Style="{StaticResource TitleTextBlockStyle}" Margin="0,0,0,16"/>
 
+            <!-- 开机自启动 -->
+            <TextBlock Text="启动" Style="{StaticResource SubtitleTextBlockStyle}" Margin="0,8,0,8"/>
+
+            <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" CornerRadius="8" Padding="16" Margin="0,2">
+                <Grid ColumnDefinitions="*,Auto">
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="开机自启动"/>
+                        <TextBlock Text="登录 Windows 时自动以管理员权限启动，无需 UAC 确认" FontSize="12"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                    </StackPanel>
+                    <ToggleSwitch Grid.Column="1" IsOn="{x:Bind AutoStartEnabled, Mode=TwoWay}" MinWidth="0"/>
+                </Grid>
+            </Border>
+
+            <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" CornerRadius="8" Padding="16" Margin="0,2">
+                <Grid ColumnDefinitions="*,Auto">
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="静默启动"/>
+                        <TextBlock Text="开机启动后最小化到系统托盘，不显示主窗口" FontSize="12"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                    </StackPanel>
+                    <ToggleSwitch Grid.Column="1" IsOn="{x:Bind SilentStartEnabled, Mode=TwoWay}" MinWidth="0"
+                                  IsEnabled="{x:Bind AutoStartEnabled, Mode=OneWay}"/>
+                </Grid>
+            </Border>
+
             <!-- 后台自动优化 -->
             <TextBlock Text="后台自动优化" Style="{StaticResource SubtitleTextBlockStyle}" Margin="0,8,0,8"/>
 

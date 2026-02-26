@@ -11,7 +11,17 @@ public sealed partial class DashboardPage : Page
 
     public DashboardPage()
     {
-        ViewModel = new DashboardViewModel(DispatcherQueue);
+        // 若静默启动时已创建后台 VM，则复用它；否则新建
+        if (App.BackgroundVm is { } bgVm)
+        {
+            ViewModel = bgVm;
+            _started = true; // 已在 App.OnLaunched 中 Start()
+        }
+        else
+        {
+            ViewModel = new DashboardViewModel(DispatcherQueue);
+        }
+
         InitializeComponent();
 
         // 注册到 MainWindow 以便关闭时清理

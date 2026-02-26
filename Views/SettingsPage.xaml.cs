@@ -1,7 +1,7 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using PrismCore.Helpers;
 using PrismCore.Models;
-
 namespace PrismCore.Views;
 
 public sealed partial class SettingsPage : Page
@@ -10,9 +10,33 @@ public sealed partial class SettingsPage : Page
 
     public SettingsPage() => InitializeComponent();
 
+    // 开机自启动
+    public bool AutoStartEnabled
+    {
+        get => _s.AutoStartEnabled;
+        set
+        {
+            _s.AutoStartEnabled = value;
+            AutoStartHelper.SetAutoStart(value, _s.SilentStartEnabled);
+        }
+    }
+
+    public bool SilentStartEnabled
+    {
+        get => _s.SilentStartEnabled;
+        set
+        {
+            _s.SilentStartEnabled = value;
+            // 更新任务计划中的 --silent 参数
+            if (_s.AutoStartEnabled)
+                AutoStartHelper.SetAutoStart(true, value);
+        }
+    }
+
     private void NotifyDashboard()
     {
         if (App.MainWindow is { DashboardVm: { } vm }) vm.ReloadSettings();
+        else App.BackgroundVm?.ReloadSettings();
     }
 
     // 后台自动优化

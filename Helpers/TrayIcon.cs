@@ -23,11 +23,10 @@ public sealed class TrayIcon : IDisposable
     {
         var hInstance = GetModuleHandleW(null);
 
-        // 加载图标
-        var iconPath = Path.Combine(AppContext.BaseDirectory, @"Assets\Square44x44Logo.targetsize-24_altform-unplated.png");
-        // PNG 不能直接作为 ICO 加载，改用 .ico 或 scale-200 尝试
-        // LoadImage 支持 .ico 文件；对 PNG 需要用 GDI+ 转换
-        _hIcon = LoadIconFromPng(iconPath);
+        // 从 exe 提取嵌入图标（由 csproj ApplicationIcon 编译嵌入）
+        var exePath = Environment.ProcessPath;
+        if (!string.IsNullOrEmpty(exePath))
+            _hIcon = LoadTrayIcon(exePath);
 
         // 注册窗口类
         _wndProc = WndProc;
@@ -102,11 +101,13 @@ public sealed class TrayIcon : IDisposable
         DestroyMenu(hMenu);
     }
 
-    /// <summary>用 GDI+ 从 PNG 创建 HICON。</summary>
-    private static nint LoadIconFromPng(string path)
+    [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
+    private static extern nint ExtractIconW(nint hInst, string lpszExeFileName, uint nIconIndex);
+
+    /// <summary>从 exe 嵌入资源提取图标（由 csproj ApplicationIcon 编译嵌入，Windows 自动缩放尺寸）。</summary>
+    private static nint LoadTrayIcon(string exePath)
     {
-        if (!File.Exists(path)) return 0;
-        using var bmp = new System.Drawing.Bitmap(path);
-        return bmp.GetHicon();
+        var icon = ExtractIconW(0, exePath, 0);
+        return (icon != 0 && icon != 1) ? icon : 0;
     }
 }

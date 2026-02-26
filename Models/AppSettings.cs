@@ -109,6 +109,10 @@ public sealed class AppSettings
     // 智能分页文件建议
     public bool PagefileSuggestionEnabled { get => Get("pagefile_suggestion", true); set => Set("pagefile_suggestion", value); }
 
+    // 开机自启动
+    public bool AutoStartEnabled { get => Get("auto_start", false); set => Set("auto_start", value); }
+    public bool SilentStartEnabled { get => Get("silent_start", false); set => Set("silent_start", value); }
+
     // 更新模式：0=不检查, 1=仅检查, 2=自动安装
     public int UpdateMode { get => Get("update_mode", 0); set => Set("update_mode", value); }
 

@@ -15,9 +15,13 @@ public static class Program
 {
     private const string UninstallKey = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\PrismCore";
 
+    /// <summary>是否以静默模式启动（最小化到托盘）。</summary>
+    public static bool IsSilentStart { get; private set; }
+
     [STAThread]
     public static void Main(string[] args)
     {
+        IsSilentStart = args.Contains("--silent", StringComparer.OrdinalIgnoreCase);
         // Velopack 必须在最前面，处理安装、卸载、更新等钩子
         // 钩子以普通权限运行（asInvoker），不会触发"请求需要提升"
         VelopackApp.Build()
@@ -32,10 +36,11 @@ public static class Program
         {
             try
             {
+                var passArgs = args.Select(a => a.Contains(' ') ? $"\"{a}\"" : a);
                 Process.Start(new ProcessStartInfo
                 {
                     FileName = Environment.ProcessPath!,
-                    Arguments = string.Join(' ', args.Select(a => a.Contains(' ') ? $"\"{a}\"" : a)),
+                    Arguments = string.Join(' ', passArgs),
                     UseShellExecute = true,
                     Verb = "runas"
                 });
