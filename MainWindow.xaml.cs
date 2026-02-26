@@ -37,12 +37,12 @@ public sealed partial class MainWindow : Window
         NavView.SelectedItem = NavView.MenuItems[0];
     }
 
-    /// <summary>设置窗口任务栏图标。</summary>
+    /// <summary>设置窗口任务栏图标（使用 exe 嵌入的图标资源，由 csproj ApplicationIcon 编译嵌入）。</summary>
     private void SetWindowIcon()
     {
-        var iconPath = Path.Combine(AppContext.BaseDirectory, "Assets", "app.ico");
-        if (File.Exists(iconPath))
-            AppWindow.SetIcon(iconPath);
+        var exePath = Environment.ProcessPath;
+        if (!string.IsNullOrEmpty(exePath))
+            AppWindow.SetIcon(exePath);
     }
 
     private void NavView_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
