@@ -221,6 +221,29 @@ PrismCore/
 - 重置 TCP/IP 协议栈后需要重启计算机
 - 应用为单实例运行，不支持同时打开多个窗口
 
+## 贡献者
+
+感谢以下贡献者对本项目的支持：
+
+<table>
+  <tr>
+    <td align="center">
+      <a href="https://github.com/MacroMeng">
+        <img src="https://github.com/MacroMeng.png" width="80" height="80" style="border-radius:50%;" alt="MacroMeng"/><br/>
+        <sub><b>MacroMeng</b></sub>
+      </a><br/>
+      <sub>🎨 图标设计</sub>
+    </td>
+    <td align="center">
+      <a href="https://github.com/lrsgzs">
+        <img src="https://github.com/lrsgzs.png" width="80" height="80" style="border-radius:50%;" alt="lrsgzs"/><br/>
+        <sub><b>lrsgzs</b></sub>
+      </a><br/>
+      <sub>💻 C# 技术支持</sub>
+    </td>
+  </tr>
+</table>
+
 ## 许可证
 
 PrismCore - Windows 系统优化工具
