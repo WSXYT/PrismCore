@@ -1,0 +1,303 @@
+name: Junie
+
+on:
+  # 交互式助手触发
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+  issues:
+    types: [opened, assigned]
+  pull_request_review:
+    types: [submitted]
+  # 代码审查触发
+  pull_request:
+    types: [opened, synchronize]
+    branches: [master]
+  # 文档同步触发（PR 合并后）
+  pull_request_target:
+    types: [closed]
+    branches: [master]
+  # 冲突解决触发
+  push:
+    branches: [master]
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Action name'
+        required: true
+        default: "resolve-conflicts"
+      prNumber:
+        description: "PR number"
+        required: true
+  # CI 修复触发（排除自身避免循环）
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+
+jobs:
+  # 交互式助手：@junie-agent 触发
+  interactive:
+    if: |
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@junie-agent')) ||
+      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@junie-agent')) ||
+      (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@junie-agent')) ||
+      (github.event_name == 'issues' && (contains(github.event.issue.body, '@junie-agent') || contains(github.event.issue.title, '@junie-agent')))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: JetBrains/junie-github-action@v0
+        with:
+          junie_api_key: ${{ secrets.JUNIE_API_KEY }}
+          model: claude-opus-4-5-20251101
+          base_branch: master
+          create_new_branch_for_pr: "true"
+          use_single_comment: "true"
+
+  # 自动代码审查：PR 创建或更新时触发（内置 code-review prompt）
+  code-review:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: JetBrains/junie-github-action@v0
+        with:
+          junie_api_key: ${{ secrets.JUNIE_API_KEY }}
+          prompt: code-review
+          model: claude-opus-4-5-20251101
+          use_single_comment: "true"
+
+  # 文档同步：PR 合并到 master 时触发
+  # 根据 PrismCore 项目特点优化，支持中英文双语文档
+  docs-sync:
+    if: github.event_name == 'pull_request_target' && github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: JetBrains/junie-github-action@v0
+        with:
+          junie_api_key: ${{ secrets.JUNIE_API_KEY }}
+          model: claude-opus-4-5-20251101
+          create_new_branch_for_pr: "true"
+          prompt: |
+            # 文档同步任务 / Documentation Sync Task
+
+            你是一个技术文档工程师，负责将代码变更同步到项目文档中。
+            You are a technical documentation engineer responsible for syncing code changes to project documentation.
+
+            ## 项目信息 / Project Info
+            - **项目名称**: PrismCore
+            - **项目类型**: Windows 系统优化工具 / Windows System Optimization Tool
+            - **技术栈**: C# / .NET 10 / WinUI 3 / MVVM
+            - **主文档语言**: 简体中文（默认）/ Simplified Chinese (default)
+            - **文档文件**:
+              - README.md（中文主版）
+              - README-en.md（英文翻译版，必须与中文版同步更新）
+              - MIGRATION_TO_CSHARP.md
+            - **排除文件**: CLAUDE.md（AI 助手规范，无需同步）
+            - **重要**: 中英文文档必须同步更新，保持内容完全一致
+
+            ## 任务说明 / Task Description
+            1. 使用 `gh pr diff ${{ github.event.pull_request.head.ref }}` 获取 PR 变更
+            2. 分析代码变更，判断哪些文档需要更新
+            3. 更新文档中的相关内容
+
+            ## 需要检查的文档内容 / Documentation to Check
+
+            ### README.md
+            - **功能概览**: 新增/修改/删除功能后，同步更新功能描述
+            - **系统要求**: .NET 版本、Windows 版本要求变化时更新
+            - **安装与运行**: 下载链接、安装步骤变化时更新
+            - **使用说明**: UI 变化、操作流程变化时更新
+            - **设置说明**: 新增/修改设置项时同步更新默认值和说明
+            - **技术架构**: 目录结构、依赖库变化时更新
+            - **注意事项**: 新增注意事项或警告信息
+            - **其他**: 按照实际代码情况变更
+
+            ### MIGRATION_TO_CSHARP.md
+            - 迁移方案变化时同步更新
+
+            ### API 文档
+            - 检查 C# 代码中的 XML 注释是否需要更新
+            - 公共方法/类的文档注释
+
+            ## 更新规则 / Update Rules
+            1. **仅在需要时更新**: 如果文档已经准确描述了变更后的功能，则不修改
+            2. **保持简洁**: 示例代码保持简洁可运行
+            3. ** Breaking Changes**: 重大变更需要显示变更前后对比
+            4. **新功能标注**: 添加 "新增于 vX.X" 标注
+            5. **语言一致性**: 保持简体中文，英文作为补充说明
+            6. **仅修改文档文件**: 只修改 .md 文档文件，不要修改代码
+
+            ## 输出格式 / Output Format
+            完成同步后，提交变更并创建 PR，PR 标题格式: `docs: sync documentation from PR #{$PR_NUMBER}`
+
+            如果没有文档需要更新，不要创建空提交。
+
+  # CI 失败修复：CI 工作流失败时触发（内置 fix-ci prompt）
+  fix-ci:
+    if: |
+      github.event_name == 'workflow_run' &&
+      github.event.workflow_run.conclusion == 'failure' &&
+      !startsWith(github.event.workflow_run.head_branch, 'junie/')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      checks: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_branch }}
+          fetch-depth: 1
+      - uses: JetBrains/junie-github-action@v0
+        with:
+          junie_api_key: ${{ secrets.JUNIE_API_KEY }}
+          prompt: fix-ci
+          model: claude-opus-4-5-20251101
+          create_new_branch_for_pr: "true"
+          use_single_comment: "true"
+          allowed_mcp_servers: mcp_github_checks_server
+
+  # 合并冲突解决：master 有新推送或手动触发时
+  resolve-conflicts:
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: JetBrains/junie-github-action@v0
+        with:
+          junie_api_key: ${{ secrets.JUNIE_API_KEY }}
+          model: claude-opus-4-5-20251101
+          resolve_conflicts: true
+
+  # 密钥检测：扫描 PR 中是否意外提交敏感信息
+  secret-audit:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: JetBrains/junie-github-action@v0
+        id: junie
+        with:
+          junie_api_key: ${{ secrets.JUNIE_API_KEY }}
+          silent_mode: "true"
+          model: claude-opus-4-5-20251101
+          prompt: |
+            # 密钥扫描任务 / Secret Scan Task
+
+            你是一个安全审计员，负责扫描 PR 中的代码变更，检测是否意外提交了敏感信息。
+            You are a security auditor responsible for scanning PR code changes to detect accidentally committed secrets.
+
+            ## 检测目标 / Scan Targets
+            扫描以下类型的敏感信息：
+
+            ### 1. 云服务 API 密钥 / Cloud API Keys
+            - AWS Access Key / Secret Key
+            - GCP (Google Cloud) API Key
+            - Azure API Key / Connection String
+            - OpenAI API Key
+            - Stripe / Payment API Key
+            - Sentry DSN（私有的）
+            - 其他云服务密钥
+
+            ### 2. 私钥与证书 / Private Keys & Certificates
+            - RSA / SSH / PGP 私钥
+            - PFX / P12 证书文件
+            - `-----BEGIN PRIVATE KEY-----` / `-----BEGIN RSA PRIVATE KEY-----`
+
+            ### 3. 认证凭据 / Authentication Credentials
+            - 密码（password=、Password=、pwd=）
+            - API Token（api_key=、apiKey=、token=、Token=）
+            - JWT Token
+            - OAuth Secret
+            - 连接字符串中的用户名密码
+
+            ### 4. 数据库连接字符串 / Database Connection Strings
+            - SQL Server / MySQL / PostgreSQL / SQLite 连接字符串
+            - MongoDB / Redis 连接字符串
+
+            ## 检测模式 / Detection Patterns
+            - `password\s*=\s*["'][^"']{8,}["']`（密码赋值）
+            - `secret\s*=\s*["'][^"']{16,}["']`（密钥赋值）
+            - `token\s*=\s*["'][^"']{16,}["']`（Token 赋值）
+            - `api[_-]?key\s*=\s*["'][^"']{16,}["']`（API Key）
+            - `-----BEGIN\s+\w+\s+PRIVATE\s+KEY-----`（私钥头）
+            - `https?://[^:]+:[^@]+@`（URL 中的凭据）
+            - 长度超过 20 位的 base64/hex 字符串
+            - 连接字符串模式（Server=、Data Source=、Database= 包含密码）
+
+            ## 排除误报 / False Positives to Ignore
+            以下情况视为安全，不需要报告：
+            - 占位符: "your-api-key-here"、"example.com"、"placeholder"
+            - 测试数据: test@example.com、test password、dummy token
+            - 公开信息: 公开的 API 文档 URL
+            - 注释中的示例: 代码注释中的示例凭据
+
+            ## 输出格式 / Output Format
+            扫描完成后，按以下格式输出结果：
+
+            ```
+            ## 🔐 密钥扫描结果 / Secret Scan Results
+
+            **状态 / Status:** SECRETS_FOUND / CLEAN
+
+            ### 发现的问题 / Issues Found:
+            [如果发现密钥，列出每一个:]
+            - **文件 / File:** path/to/file:line_number
+            - **类型 / Type:** API Key / Private Key / Password / Connection String
+            - **严重性 / Severity:** HIGH / MEDIUM
+            - **模式 / Pattern:** [显示脱敏后的模式，如 "aws_access_key=AKIA..."]
+            - **建议 / Recommendation:** 从代码中移除，使用 GitHub Secrets
+
+            ### 安全 / No Secrets Found:
+            本次提交未检测到敏感信息。/ No secrets detected in this commit.
+            ```
+
+            ## 执行步骤 / Procedure
+            1. 使用 `gh pr diff ${{ github.event.pull_request.head.ref }}` 获取 PR 变更
+            2. 逐文件扫描，匹配上述检测模式
+            3. 排除误报情形
+            4. 生成结构化报告
+
+            **重要 / Important**: 只提供分析报告，不要修改任何代码文件。
+
+      - name: Check results
+        if: steps.junie.outputs.junie_summary != ''
+        run: |
+          echo "${{ steps.junie.outputs.junie_summary }}"
+          if echo "${{ steps.junie.outputs.junie_summary }}" | grep -q "SECRETS_FOUND"; then
+            echo "::error::Secrets detected in commit! Review the summary above."
+            exit 1
+          fi

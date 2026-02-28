@@ -1,5 +1,9 @@
 # PrismCore
 
+[English](./README-en.md) | [✓ 简体中文](./README.md)
+
+---
+
 Windows 系统优化工具，基于 WinUI 3 构建，提供内存管理、CPU 智能调度、延迟诊断、磁盘清理、网络修复和启动项管理六大核心功能。
 
 ## 功能概览
