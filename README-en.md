@@ -2,11 +2,13 @@
 
 [✓ English](./README-en.md) | [简体中文](./README.md)
 
-*Note: This is an English-translated version. For the latest information, please refer to the Chinese version.*
+### Friendly Reminder
+
+Optimization software means optimization, not upgrading ( )
+So if your PC is already well-optimized or has few software processes running, the effects may not be very noticeable qwq (please understand~
+Also, this project is developed by a middle school student, so maintenance may not always be timely — please understand qwq
 
 ---
-
-# PrismCore
 
 Windows System Optimization Tool built with WinUI 3, providing six core features: Memory Management, CPU Smart Scheduling, DPC/ISR Latency Diagnostics, Deep Disk Cleanup, Network Repair, and Startup Item Management.
 
