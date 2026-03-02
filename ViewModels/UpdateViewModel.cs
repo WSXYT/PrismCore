@@ -41,7 +41,6 @@ public partial class UpdateViewModel : ObservableObject
         _settings.UpdateChannel = value;
         _cachedUpdate = null;
         _activeUpdateService = null;
-        _lastCheckedPrerelease = null;
         LatestVersion = "未检查";
         IsUpToDate = false;
         StatusMessage = string.Empty;
@@ -56,10 +55,6 @@ public partial class UpdateViewModel : ObservableObject
         if (IsChecking) return;
         IsChecking = true;
         StatusMessage = "正在检查更新...";
-
-        // 清除旧缓存，确保失败时不保留过期的更新信息
-        _cachedUpdate = null;
-        OnPropertyChanged(nameof(HasUpdate));
 
         try
         {
@@ -96,7 +91,6 @@ public partial class UpdateViewModel : ObservableObject
         catch (InvalidOperationException)
         {
             _cachedUpdate = null;
-            _activeUpdateService = null;
             LatestVersion = "不可用";
             StatusMessage = "当前为非安装版本，无法检查更新";
         }
@@ -104,7 +98,6 @@ public partial class UpdateViewModel : ObservableObject
         {
             Log.Error(ex, "检查更新失败");
             _cachedUpdate = null;
-            _activeUpdateService = null;
             LatestVersion = "检查失败";
             StatusMessage = "检查更新失败";
         }
