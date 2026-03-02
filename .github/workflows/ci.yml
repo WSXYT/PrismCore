@@ -21,7 +21,16 @@ jobs:
           dotnet-quality: 'preview'
 
       - name: Restore
-        run: dotnet restore PrismCore.csproj
+        run: >
+          dotnet restore PrismCore.csproj
+          -r win-x64
+          -p:Platform=x64
 
       - name: Build
-        run: dotnet build PrismCore.csproj -c Release --no-restore
+        run: >
+          dotnet build PrismCore.csproj
+          -c Release
+          --no-restore
+          -r win-x64
+          -p:Platform=x64
+          -p:WindowsPackageType=None
