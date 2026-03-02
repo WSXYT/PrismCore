@@ -7,7 +7,7 @@
     <ScrollViewer Padding="32,24">
         <StackPanel Spacing="16">
             <TextBlock Text="软件更新" Style="{StaticResource TitleTextBlockStyle}"/>
-            <TextBlock Text="检查并安装最新版本（默认仅稳定版，不接收预发布）"
+            <TextBlock Text="检查并安装最新版本"
                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
 
             <!-- 版本信息 -->

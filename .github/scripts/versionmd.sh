@@ -106,7 +106,7 @@ write_notes() {
 
     local section
     for section in "${VERSIONMD_SECTIONS[@]}"; do
-      mapfile -t section_items < <(awk -F '\t' -v target="$section" '$1 == target { print $2 }' "$entries_file")
+      mapfile -t section_items < <(awk -F '\t' -v target="$section" '$1 == target { sub(/^[^\t]*\t/, ""); print }' "$entries_file")
       if ((${#section_items[@]} == 0)); then
         continue
       fi
@@ -137,7 +137,7 @@ write_versionmd() {
     local section
     for section in "${VERSIONMD_SECTIONS[@]}"; do
       echo "### $section"
-      awk -F '\t' -v target="$section" '$1 == target { print "- " $2 }' "$entries_file"
+      awk -F '\t' -v target="$section" '$1 == target { sub(/^[^\t]*\t/, ""); print "- " $0 }' "$entries_file"
       echo
     done
   } > "$output_file"
