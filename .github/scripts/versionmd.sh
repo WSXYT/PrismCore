@@ -43,34 +43,25 @@ extract_entries() {
       continue
     fi
 
-    case "$line" in
-      "### 新增")
-        current_section="新增"
-        ;;
-      "### 变更")
-        current_section="变更"
-        ;;
-      "### 修复")
-        current_section="修复"
-        ;;
-      "### 其他")
-        current_section="其他"
-        ;;
-      "### "*)
-        current_section=""
-        ;;
-      "- "*)
-        if [[ -n "$current_section" ]]; then
-          local item
-          item="${line#- }"
-          if [[ -n "$item" ]]; then
-            printf '%s\t%s\n' "$current_section" "$item" >> "$output_file"
-          fi
+    if [[ "$line" == "### "* ]]; then
+      current_section=""
+      local section
+      for section in "${VERSIONMD_SECTIONS[@]}"; do
+        if [[ "$line" == "### $section" ]]; then
+          current_section="$section"
+          break
         fi
-        ;;
-      *)
-        ;;
-    esac
+      done
+      continue
+    fi
+
+    if [[ "$line" == "- "* ]] && [[ -n "$current_section" ]]; then
+      local item
+      item="${line#- }"
+      if [[ -n "$item" ]]; then
+        printf '%s\t%s\n' "$current_section" "$item" >> "$output_file"
+      fi
+    fi
   done < "$file_path"
 }
 
