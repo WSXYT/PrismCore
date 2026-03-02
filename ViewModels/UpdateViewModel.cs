@@ -10,9 +10,9 @@ namespace PrismCore.ViewModels;
 /// <summary>更新页面视图模型。</summary>
 public partial class UpdateViewModel : ObservableObject
 {
-    private readonly UpdateService _updateService = new();
     private readonly AppSettings _settings = AppSettings.Instance;
     private UpdateInfo? _cachedUpdate;
+    private UpdateService? _activeUpdateService;
 
     [ObservableProperty] private string _currentVersion = UpdateService.GetCurrentVersion();
     [ObservableProperty] private string _latestVersion = "未检查";
@@ -22,15 +22,29 @@ public partial class UpdateViewModel : ObservableObject
     [ObservableProperty] private int _updateProgress;
     [ObservableProperty] private string _statusMessage = "";
     [ObservableProperty] private int _selectedUpdateMode;
+    [ObservableProperty] private int _selectedUpdateChannel;
 
     public UpdateViewModel()
     {
+        var recommendedChannel = UpdateService.GetRecommendedChannel();
+        if (_settings.LastInstalledChannel != recommendedChannel)
+        {
+            _settings.UpdateChannel = recommendedChannel;
+            _settings.LastInstalledChannel = recommendedChannel;
+        }
+
         _selectedUpdateMode = _settings.UpdateMode;
+        _selectedUpdateChannel = _settings.UpdateChannel;
     }
 
     partial void OnSelectedUpdateModeChanged(int value)
     {
         _settings.UpdateMode = value;
+    }
+
+    partial void OnSelectedUpdateChannelChanged(int value)
+    {
+        _settings.UpdateChannel = value;
     }
 
     public bool HasUpdate => _cachedUpdate != null && !IsUpToDate;
@@ -44,7 +58,8 @@ public partial class UpdateViewModel : ObservableObject
 
         try
         {
-            _cachedUpdate = await _updateService.CheckForUpdateAsync();
+            _activeUpdateService = new UpdateService(SelectedUpdateChannel == 1);
+            _cachedUpdate = await _activeUpdateService.CheckForUpdateAsync();
             if (_cachedUpdate != null)
             {
                 LatestVersion = _cachedUpdate.TargetFullRelease.Version.ToString();
@@ -79,14 +94,14 @@ public partial class UpdateViewModel : ObservableObject
     [RelayCommand]
     private async Task UpdateAsync()
     {
-        if (IsUpdating || _cachedUpdate == null) return;
+        if (IsUpdating || _cachedUpdate == null || _activeUpdateService == null) return;
         IsUpdating = true;
         UpdateProgress = 0;
         StatusMessage = "正在下载更新...";
 
         try
         {
-            await _updateService.DownloadAndApplyAsync(_cachedUpdate, progress =>
+            await _activeUpdateService.DownloadAndApplyAsync(_cachedUpdate, progress =>
             {
                 App.MainWindow?.DispatcherQueue.TryEnqueue(() =>
                 {

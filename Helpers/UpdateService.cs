@@ -1,4 +1,5 @@
 using Serilog;
+using System.Reflection;
 using Velopack;
 using Velopack.Sources;
 
@@ -34,16 +35,42 @@ public sealed class UpdateService
 {
     private const string RepoUrl = "https://github.com/WSXYT/PrismCore";
     private const string ProxyBaseUrl = "https://gemini.435535.xyz";
-    private const bool IncludePrerelease = false; // 默认仅稳定版更新，不接收 beta/预发布
+    private readonly bool _includePrerelease;
+    private readonly Func<IUpdateSource>[] _sources;
+
+    public UpdateService(bool includePrerelease)
+    {
+        _includePrerelease = includePrerelease;
+        _sources =
+        [
+            () => new GithubSource(RepoUrl, null, _includePrerelease, new ProxyFileDownloader(ProxyBaseUrl)),
+            () => new GithubSource(RepoUrl, null, _includePrerelease),
+        ];
+    }
 
     /// <summary>
-    /// 更新源列表，按优先级排列。代理优先，直连备用
+    /// 根据当前已安装版本推断推荐通道：0=稳定，1=预发布
     /// </summary>
-    private static readonly Func<IUpdateSource>[] Sources =
-    [
-        () => new GithubSource(RepoUrl, null, IncludePrerelease, new ProxyFileDownloader(ProxyBaseUrl)),
-        () => new GithubSource(RepoUrl, null, IncludePrerelease),
-    ];
+    public static int GetRecommendedChannel() => IsCurrentBuildPrerelease() ? 1 : 0;
+
+    private static bool IsCurrentBuildPrerelease()
+    {
+        try
+        {
+            var mgr = new UpdateManager(new GithubSource(RepoUrl, null, false));
+            if (mgr.IsInstalled && mgr.CurrentVersion is { } v)
+                return IsPrereleaseVersion(v.ToString());
+        }
+        catch { /* 非 Velopack 安装环境 */ }
+
+        var infoVersion = typeof(UpdateService).Assembly
+            .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
+
+        return !string.IsNullOrWhiteSpace(infoVersion) && IsPrereleaseVersion(infoVersion);
+    }
+
+    private static bool IsPrereleaseVersion(string version) =>
+        version.Contains('-', StringComparison.Ordinal);
 
     private UpdateManager? _manager;
 
@@ -54,7 +81,7 @@ public sealed class UpdateService
     {
         try
         {
-            var mgr = new UpdateManager(new GithubSource(RepoUrl, null, IncludePrerelease));
+            var mgr = new UpdateManager(new GithubSource(RepoUrl, null, false));
             if (mgr.IsInstalled && mgr.CurrentVersion is { } v) return v.ToString();
         }
         catch { /* 非 Velopack 安装环境 */ }
@@ -71,7 +98,7 @@ public sealed class UpdateService
         {
             try
             {
-                var mgr = new UpdateManager(new GithubSource(RepoUrl, null, IncludePrerelease));
+                var mgr = new UpdateManager(new GithubSource(RepoUrl, null, false));
                 return mgr.IsInstalled;
             }
             catch { return false; }
@@ -85,11 +112,11 @@ public sealed class UpdateService
     /// </summary>
     public async Task<UpdateInfo?> CheckForUpdateAsync()
     {
-        for (var i = 0; i < Sources.Length; i++)
+        for (var i = 0; i < _sources.Length; i++)
         {
             try
             {
-                var source = Sources[i]();
+                var source = _sources[i]();
                 _manager = new UpdateManager(source);
 
                 if (!_manager.IsInstalled)

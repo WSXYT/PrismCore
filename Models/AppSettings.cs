@@ -113,8 +113,14 @@ public sealed class AppSettings
     public bool AutoStartEnabled { get => Get("auto_start", false); set => Set("auto_start", value); }
     public bool SilentStartEnabled { get => Get("silent_start", false); set => Set("silent_start", value); }
 
-    // 更新模式：0=不检查, 1=仅检查, 2=自动安装
-    public int UpdateMode { get => Get("update_mode", 0); set => Set("update_mode", value); }
+    // 更新模式：0=不检查, 1=仅检查, 2=自动安装（默认）
+    public int UpdateMode { get => Get("update_mode", 2); set => Set("update_mode", value); }
+
+    // 更新通道：0=稳定版本, 1=预发布版本
+    public int UpdateChannel { get => Get("update_channel", 0); set => Set("update_channel", value); }
+
+    // 记录最近一次安装版本的通道（0=稳定, 1=预发布），用于通道默认值自动对齐
+    public int LastInstalledChannel { get => Get("last_installed_channel", -1); set => Set("last_installed_channel", value); }
 
     /// <summary>恢复所有设置为默认值。</summary>
     public void ResetToDefaults()

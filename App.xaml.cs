@@ -139,7 +139,15 @@ public partial class App : Application
     {
         try
         {
-            var svc = new UpdateService();
+            var settings = AppSettings.Instance;
+            var recommendedChannel = UpdateService.GetRecommendedChannel();
+            if (settings.LastInstalledChannel != recommendedChannel)
+            {
+                settings.UpdateChannel = recommendedChannel;
+                settings.LastInstalledChannel = recommendedChannel;
+            }
+
+            var svc = new UpdateService(settings.UpdateChannel == 1);
             var update = await svc.CheckForUpdateAsync();
             if (update == null) return;
 
