@@ -34,11 +34,11 @@ public sealed class AppSettings
 
     private void DebounceSave()
     {
-        var oldCts = _saveCts;
+        var newCts = new CancellationTokenSource();
+        var oldCts = Interlocked.Exchange(ref _saveCts, newCts);
         oldCts?.Cancel();
         oldCts?.Dispose();
-        _saveCts = new CancellationTokenSource();
-        var token = _saveCts.Token;
+        var token = newCts.Token;
         Task.Delay(500, token).ContinueWith(_ => Save(), token, TaskContinuationOptions.OnlyOnRanToCompletion, TaskScheduler.Default);
     }
 

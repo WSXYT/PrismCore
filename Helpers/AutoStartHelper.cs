@@ -84,7 +84,7 @@ public static class AutoStartHelper
   <Actions Context=""Author"">
     <Exec>
       <Command>""{escapedExePath}""</Command>
-      <Arguments>{arguments}</Arguments>
+      <Arguments>{System.Security.SecurityElement.Escape(arguments)}</Arguments>
       <WorkingDirectory>{escapedWorkDir}</WorkingDirectory>
     </Exec>
   </Actions>
