@@ -13,6 +13,7 @@ public partial class UpdateViewModel : ObservableObject
     private readonly AppSettings _settings = AppSettings.Instance;
     private UpdateInfo? _cachedUpdate;
     private UpdateService? _activeUpdateService;
+    private bool? _lastCheckedPrerelease;
 
     [ObservableProperty] private string _currentVersion = UpdateService.GetCurrentVersion();
     [ObservableProperty] private string _latestVersion = "未检查";
@@ -26,9 +27,8 @@ public partial class UpdateViewModel : ObservableObject
 
     public UpdateViewModel()
     {
-        var activeChannel = UpdateService.ResolveAndPersistRecommendedChannel(_settings);
         _selectedUpdateMode = _settings.UpdateMode;
-        _selectedUpdateChannel = activeChannel;
+        _selectedUpdateChannel = _settings.UpdateChannel;
     }
 
     partial void OnSelectedUpdateModeChanged(int value)
@@ -41,6 +41,7 @@ public partial class UpdateViewModel : ObservableObject
         _settings.UpdateChannel = value;
         _cachedUpdate = null;
         _activeUpdateService = null;
+        _lastCheckedPrerelease = null;
         LatestVersion = "未检查";
         IsUpToDate = false;
         StatusMessage = string.Empty;
@@ -56,10 +57,22 @@ public partial class UpdateViewModel : ObservableObject
         IsChecking = true;
         StatusMessage = "正在检查更新...";
 
+        // 清除旧缓存，确保失败时不保留过期的更新信息
+        _cachedUpdate = null;
+        OnPropertyChanged(nameof(HasUpdate));
+
         try
         {
-            var service = new UpdateService(SelectedUpdateChannel == 1);
-            _activeUpdateService = service;
+            var includePrerelease = SelectedUpdateChannel == 1;
+
+            // 仅在通道变更或首次使用时创建新 UpdateService
+            if (_activeUpdateService == null || _lastCheckedPrerelease != includePrerelease)
+            {
+                _activeUpdateService = new UpdateService(includePrerelease);
+                _lastCheckedPrerelease = includePrerelease;
+            }
+
+            var service = _activeUpdateService;
             var update = await service.CheckForUpdateAsync();
 
             // 如果检查期间用户切换了通道，此结果已过期，直接丢弃。
@@ -82,12 +95,16 @@ public partial class UpdateViewModel : ObservableObject
         }
         catch (InvalidOperationException)
         {
+            _cachedUpdate = null;
+            _activeUpdateService = null;
             LatestVersion = "不可用";
             StatusMessage = "当前为非安装版本，无法检查更新";
         }
         catch (Exception ex)
         {
             Log.Error(ex, "检查更新失败");
+            _cachedUpdate = null;
+            _activeUpdateService = null;
             LatestVersion = "检查失败";
             StatusMessage = "检查更新失败";
         }

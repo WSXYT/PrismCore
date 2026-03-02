@@ -113,8 +113,8 @@ public sealed class AppSettings
     public bool AutoStartEnabled { get => Get("auto_start", false); set => Set("auto_start", value); }
     public bool SilentStartEnabled { get => Get("silent_start", false); set => Set("silent_start", value); }
 
-    // 更新模式：0=不检查, 1=仅检查, 2=自动安装（默认）
-    public int UpdateMode { get => Get("update_mode", 2); set => Set("update_mode", value); }
+    // 更新模式：0=不检查, 1=仅检查, 2=自动安装
+    public int UpdateMode { get => Get("update_mode", 0); set => Set("update_mode", value); }
 
     // 更新通道：0=稳定版本, 1=预发布版本
     public int UpdateChannel { get => Get("update_channel", 0); set => Set("update_channel", value); }

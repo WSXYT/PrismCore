@@ -39,6 +39,7 @@ jobs:
           dotnet restore PrismCore.csproj
           -r ${{ matrix.rid }}
           -p:Platform=${{ matrix.platform }}
+          -p:WindowsPackageType=None
 
       - name: Build
         run: >
