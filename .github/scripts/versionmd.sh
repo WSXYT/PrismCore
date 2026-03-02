@@ -12,7 +12,7 @@ parse_version() {
     return 1
   fi
 
-  echo "$version_line" | sed -E 's/^Version:[[:space:]]*//'
+  echo "$version_line" | sed -E 's/^Version:[[:space:]]*//; s/[[:space:]]*$//'
 }
 
 extract_entries() {
@@ -27,7 +27,7 @@ extract_entries() {
     local line
     line="$(printf '%s' "$raw_line" | sed -E 's/[[:space:]]+$//')"
 
-    if [[ "$line" =~ ^##[[:space:]]+待发布 ]]; then
+    if [[ "$line" =~ ^##[[:space:]]+待发布[[:space:]]*$ ]]; then
       in_unreleased="true"
       current_section=""
       continue
