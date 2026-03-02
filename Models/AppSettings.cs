@@ -34,7 +34,9 @@ public sealed class AppSettings
 
     private void DebounceSave()
     {
-        _saveCts?.Cancel();
+        var oldCts = _saveCts;
+        oldCts?.Cancel();
+        oldCts?.Dispose();
         _saveCts = new CancellationTokenSource();
         var token = _saveCts.Token;
         Task.Delay(500, token).ContinueWith(_ => Save(), token, TaskContinuationOptions.OnlyOnRanToCompletion, TaskScheduler.Default);
