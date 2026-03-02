@@ -1,5 +1,8 @@
 name: Junie
 
+env:
+  JUNIE_MODEL: opus
+
 on:
   # 交互式助手触发
   issue_comment:
@@ -51,7 +54,7 @@ jobs:
       - uses: JetBrains/junie-github-action@v0
         with:
           junie_api_key: ${{ secrets.JUNIE_API_KEY }}
-          model: claude-opus-4-5-20251101
+          model: ${{ env.JUNIE_MODEL }}
           base_branch: master
           create_new_branch_for_pr: "true"
           use_single_comment: "true"
@@ -72,7 +75,7 @@ jobs:
         with:
           junie_api_key: ${{ secrets.JUNIE_API_KEY }}
           prompt: code-review
-          model: claude-opus-4-5-20251101
+          model: ${{ env.JUNIE_MODEL }}
           use_single_comment: "true"
 
   # 文档同步：push 到 beta 或 master 时触发
@@ -90,7 +93,7 @@ jobs:
       - uses: JetBrains/junie-github-action@v0
         with:
           junie_api_key: ${{ secrets.JUNIE_API_KEY }}
-          model: claude-opus-4-5-20251101
+          model: ${{ env.JUNIE_MODEL }}
           base_branch: ${{ github.ref_name }}
           create_new_branch_for_pr: "true"
           prompt: |
@@ -170,7 +173,7 @@ jobs:
         with:
           junie_api_key: ${{ secrets.JUNIE_API_KEY }}
           prompt: fix-ci
-          model: claude-opus-4-5-20251101
+          model: ${{ env.JUNIE_MODEL }}
           create_new_branch_for_pr: "true"
           use_single_comment: "true"
           allowed_mcp_servers: mcp_github_checks_server
@@ -190,7 +193,7 @@ jobs:
       - uses: JetBrains/junie-github-action@v0
         with:
           junie_api_key: ${{ secrets.JUNIE_API_KEY }}
-          model: claude-opus-4-5-20251101
+          model: ${{ env.JUNIE_MODEL }}
           resolve_conflicts: true
 
   # 密钥检测：扫描 PR 中是否意外提交敏感信息
@@ -210,7 +213,7 @@ jobs:
         with:
           junie_api_key: ${{ secrets.JUNIE_API_KEY }}
           silent_mode: "true"
-          model: claude-opus-4-5-20251101
+          model: ${{ env.JUNIE_MODEL }}
           prompt: |
             # 密钥扫描任务 / Secret Scan Task
 
