@@ -50,15 +50,12 @@ public sealed class UpdateService
     private static UpdateManager CreateProbeManager() =>
         new(new GithubSource(RepoUrl, null, false));
 
-    private static bool IsInstalledByVelopack(out string version)
+    private static bool IsInstalledByVelopack()
     {
-        version = string.Empty;
         try
         {
             var mgr = CreateProbeManager();
-            if (!mgr.IsInstalled) return false;
-            if (mgr.CurrentVersion is { } v) version = v.ToString();
-            return true;
+            return mgr.IsInstalled;
         }
         catch { /* 非 Velopack 安装环境 */ }
 
@@ -67,9 +64,17 @@ public sealed class UpdateService
 
     private static bool TryGetInstalledVersion(out string version)
     {
-        var installed = IsInstalledByVelopack(out var installedVersion);
-        version = installedVersion;
-        return installed && !string.IsNullOrWhiteSpace(version);
+        version = string.Empty;
+        try
+        {
+            var mgr = CreateProbeManager();
+            if (!mgr.IsInstalled || mgr.CurrentVersion is null) return false;
+            version = mgr.CurrentVersion.ToString();
+            return !string.IsNullOrWhiteSpace(version);
+        }
+        catch { /* 非 Velopack 安装环境 */ }
+
+        return false;
     }
 
     /// <summary>
@@ -124,7 +129,7 @@ public sealed class UpdateService
     /// </summary>
     public static bool IsVelopackInstalled
     {
-        get => IsInstalledByVelopack(out _);
+        get => IsInstalledByVelopack();
     }
 
     /// <summary>

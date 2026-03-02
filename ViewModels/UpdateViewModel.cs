@@ -39,6 +39,12 @@ public partial class UpdateViewModel : ObservableObject
     partial void OnSelectedUpdateChannelChanged(int value)
     {
         _settings.UpdateChannel = value;
+        _cachedUpdate = null;
+        _activeUpdateService = null;
+        LatestVersion = "未检查";
+        IsUpToDate = false;
+        StatusMessage = string.Empty;
+        OnPropertyChanged(nameof(HasUpdate));
     }
 
     public bool HasUpdate => _cachedUpdate != null && !IsUpToDate;
@@ -52,11 +58,18 @@ public partial class UpdateViewModel : ObservableObject
 
         try
         {
-            _activeUpdateService = new UpdateService(SelectedUpdateChannel == 1);
-            _cachedUpdate = await _activeUpdateService.CheckForUpdateAsync();
-            if (_cachedUpdate != null)
+            var service = new UpdateService(SelectedUpdateChannel == 1);
+            _activeUpdateService = service;
+            var update = await service.CheckForUpdateAsync();
+
+            // 如果检查期间用户切换了通道，此结果已过期，直接丢弃。
+            if (!ReferenceEquals(_activeUpdateService, service))
+                return;
+
+            _cachedUpdate = update;
+            if (update != null)
             {
-                LatestVersion = _cachedUpdate.TargetFullRelease.Version.ToString();
+                LatestVersion = update.TargetFullRelease.Version.ToString();
                 IsUpToDate = false;
                 StatusMessage = "发现新版本";
             }
