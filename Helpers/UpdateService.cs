@@ -1,4 +1,5 @@
 using Serilog;
+using PrismCore.Models;
 using System.Reflection;
 using Velopack;
 using Velopack.Sources;
@@ -35,17 +36,55 @@ public sealed class UpdateService
 {
     private const string RepoUrl = "https://github.com/WSXYT/PrismCore";
     private const string ProxyBaseUrl = "https://gemini.435535.xyz";
-    private readonly bool _includePrerelease;
     private readonly Func<IUpdateSource>[] _sources;
 
     public UpdateService(bool includePrerelease)
     {
-        _includePrerelease = includePrerelease;
         _sources =
         [
-            () => new GithubSource(RepoUrl, null, _includePrerelease, new ProxyFileDownloader(ProxyBaseUrl)),
-            () => new GithubSource(RepoUrl, null, _includePrerelease),
+            () => new GithubSource(RepoUrl, null, includePrerelease, new ProxyFileDownloader(ProxyBaseUrl)),
+            () => new GithubSource(RepoUrl, null, includePrerelease),
         ];
+    }
+
+    private static UpdateManager CreateProbeManager() =>
+        new(new GithubSource(RepoUrl, null, false));
+
+    private static bool IsInstalledByVelopack(out string version)
+    {
+        version = string.Empty;
+        try
+        {
+            var mgr = CreateProbeManager();
+            if (!mgr.IsInstalled) return false;
+            if (mgr.CurrentVersion is { } v) version = v.ToString();
+            return true;
+        }
+        catch { /* 非 Velopack 安装环境 */ }
+
+        return false;
+    }
+
+    private static bool TryGetInstalledVersion(out string version)
+    {
+        var installed = IsInstalledByVelopack(out var installedVersion);
+        version = installedVersion;
+        return installed && !string.IsNullOrWhiteSpace(version);
+    }
+
+    /// <summary>
+    /// 按当前安装版本通道修正设置，并返回生效通道（0=稳定，1=预发布）。
+    /// </summary>
+    public static int ResolveAndPersistRecommendedChannel(AppSettings settings)
+    {
+        var recommendedChannel = GetRecommendedChannel();
+        if (settings.LastInstalledChannel != recommendedChannel)
+        {
+            settings.UpdateChannel = recommendedChannel;
+            settings.LastInstalledChannel = recommendedChannel;
+        }
+
+        return settings.UpdateChannel;
     }
 
     /// <summary>
@@ -55,13 +94,8 @@ public sealed class UpdateService
 
     private static bool IsCurrentBuildPrerelease()
     {
-        try
-        {
-            var mgr = new UpdateManager(new GithubSource(RepoUrl, null, false));
-            if (mgr.IsInstalled && mgr.CurrentVersion is { } v)
-                return IsPrereleaseVersion(v.ToString());
-        }
-        catch { /* 非 Velopack 安装环境 */ }
+        if (TryGetInstalledVersion(out var installedVersion))
+            return IsPrereleaseVersion(installedVersion);
 
         var infoVersion = typeof(UpdateService).Assembly
             .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
@@ -79,12 +113,8 @@ public sealed class UpdateService
     /// </summary>
     public static string GetCurrentVersion()
     {
-        try
-        {
-            var mgr = new UpdateManager(new GithubSource(RepoUrl, null, false));
-            if (mgr.IsInstalled && mgr.CurrentVersion is { } v) return v.ToString();
-        }
-        catch { /* 非 Velopack 安装环境 */ }
+        if (TryGetInstalledVersion(out var installedVersion))
+            return installedVersion;
 
         return typeof(UpdateService).Assembly.GetName().Version?.ToString(3) ?? "未知";
     }
@@ -94,15 +124,7 @@ public sealed class UpdateService
     /// </summary>
     public static bool IsVelopackInstalled
     {
-        get
-        {
-            try
-            {
-                var mgr = new UpdateManager(new GithubSource(RepoUrl, null, false));
-                return mgr.IsInstalled;
-            }
-            catch { return false; }
-        }
+        get => IsInstalledByVelopack(out _);
     }
 
     /// <summary>

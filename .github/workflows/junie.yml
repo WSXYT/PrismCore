@@ -17,7 +17,7 @@ on:
   pull_request:
     types: [opened, synchronize]
     branches: [dev, beta, master]
-  # 冲突解决触发
+  # push 触发（当前分支范围：dev / beta / master）
   push:
     branches: [dev, beta, master]
   workflow_dispatch:
@@ -178,7 +178,7 @@ jobs:
           use_single_comment: "true"
           allowed_mcp_servers: mcp_github_checks_server
 
-  # 合并冲突解决：master 有新推送或手动触发时
+  # 合并冲突解决：push（当前配置会在 dev / beta / master 触发）或手动触发
   resolve-conflicts:
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest

@@ -26,15 +26,9 @@ public partial class UpdateViewModel : ObservableObject
 
     public UpdateViewModel()
     {
-        var recommendedChannel = UpdateService.GetRecommendedChannel();
-        if (_settings.LastInstalledChannel != recommendedChannel)
-        {
-            _settings.UpdateChannel = recommendedChannel;
-            _settings.LastInstalledChannel = recommendedChannel;
-        }
-
+        var activeChannel = UpdateService.ResolveAndPersistRecommendedChannel(_settings);
         _selectedUpdateMode = _settings.UpdateMode;
-        _selectedUpdateChannel = _settings.UpdateChannel;
+        _selectedUpdateChannel = activeChannel;
     }
 
     partial void OnSelectedUpdateModeChanged(int value)
