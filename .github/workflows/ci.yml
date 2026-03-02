@@ -9,9 +9,23 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - rid: win-x64
+            platform: x64
+          - rid: win-arm64
+            platform: ARM64
+          - rid: win-x86
+            platform: x86
     steps:
       - uses: actions/checkout@v4
 
@@ -23,14 +37,14 @@ jobs:
       - name: Restore
         run: >
           dotnet restore PrismCore.csproj
-          -r win-x64
-          -p:Platform=x64
+          -r ${{ matrix.rid }}
+          -p:Platform=${{ matrix.platform }}
 
       - name: Build
         run: >
           dotnet build PrismCore.csproj
           -c Release
           --no-restore
-          -r win-x64
-          -p:Platform=x64
+          -r ${{ matrix.rid }}
+          -p:Platform=${{ matrix.platform }}
           -p:WindowsPackageType=None
