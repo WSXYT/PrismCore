@@ -34,14 +34,15 @@ public sealed class UpdateService
 {
     private const string RepoUrl = "https://github.com/WSXYT/PrismCore";
     private const string ProxyBaseUrl = "https://gemini.435535.xyz";
+    private const bool IncludePrerelease = false; // 默认仅稳定版更新，不接收 beta/预发布
 
     /// <summary>
     /// 更新源列表，按优先级排列。代理优先，直连备用
     /// </summary>
     private static readonly Func<IUpdateSource>[] Sources =
     [
-        () => new GithubSource(RepoUrl, null, true, new ProxyFileDownloader(ProxyBaseUrl)),
-        () => new GithubSource(RepoUrl, null, true),
+        () => new GithubSource(RepoUrl, null, IncludePrerelease, new ProxyFileDownloader(ProxyBaseUrl)),
+        () => new GithubSource(RepoUrl, null, IncludePrerelease),
     ];
 
     private UpdateManager? _manager;
@@ -53,7 +54,7 @@ public sealed class UpdateService
     {
         try
         {
-            var mgr = new UpdateManager(new GithubSource(RepoUrl, null, true));
+            var mgr = new UpdateManager(new GithubSource(RepoUrl, null, IncludePrerelease));
             if (mgr.IsInstalled && mgr.CurrentVersion is { } v) return v.ToString();
         }
         catch { /* 非 Velopack 安装环境 */ }
@@ -70,7 +71,7 @@ public sealed class UpdateService
         {
             try
             {
-                var mgr = new UpdateManager(new GithubSource(RepoUrl, null, true));
+                var mgr = new UpdateManager(new GithubSource(RepoUrl, null, IncludePrerelease));
                 return mgr.IsInstalled;
             }
             catch { return false; }
