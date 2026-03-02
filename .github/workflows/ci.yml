@@ -1,0 +1,27 @@
+name: CI
+
+on:
+  push:
+    branches: [dev, beta, master]
+  pull_request:
+    branches: [dev, beta, master]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+          dotnet-quality: 'preview'
+
+      - name: Restore
+        run: dotnet restore PrismCore.csproj
+
+      - name: Build
+        run: dotnet build PrismCore.csproj -c Release --no-restore
