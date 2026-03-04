@@ -40,13 +40,6 @@ public static class AutoStartHelper
         var exePath = Environment.ProcessPath!;
         var arguments = silent ? "--silent" : "";
 
-        // 对 XML 特殊字符进行转义，避免用户名或路径含 <>&"' 导致 XML 无效
-        var escapedUserId = System.Security.SecurityElement.Escape(
-            $@"{Environment.UserDomainName}\{Environment.UserName}");
-        var escapedExePath = System.Security.SecurityElement.Escape(exePath);
-        var escapedWorkDir = System.Security.SecurityElement.Escape(
-            Path.GetDirectoryName(exePath)!);
-
         // 使用 schtasks 创建任务，ONLOGON 触发，以最高权限运行
         // /RL HIGHEST 确保以管理员权限启动，不弹 UAC
         var xmlContent = $@"<?xml version=""1.0"" encoding=""UTF-16""?>
@@ -57,12 +50,12 @@ public static class AutoStartHelper
   <Triggers>
     <LogonTrigger>
       <Enabled>true</Enabled>
-      <UserId>{escapedUserId}</UserId>
+      <UserId>{Environment.UserDomainName}\{Environment.UserName}</UserId>
     </LogonTrigger>
   </Triggers>
   <Principals>
     <Principal id=""Author"">
-      <UserId>{escapedUserId}</UserId>
+      <UserId>{Environment.UserDomainName}\{Environment.UserName}</UserId>
       <LogonType>InteractiveToken</LogonType>
       <RunLevel>HighestAvailable</RunLevel>
     </Principal>
@@ -83,9 +76,9 @@ public static class AutoStartHelper
   </Settings>
   <Actions Context=""Author"">
     <Exec>
-      <Command>""{escapedExePath}""</Command>
-      <Arguments>{System.Security.SecurityElement.Escape(arguments)}</Arguments>
-      <WorkingDirectory>{escapedWorkDir}</WorkingDirectory>
+      <Command>""{exePath}""</Command>
+      <Arguments>{arguments}</Arguments>
+      <WorkingDirectory>{Path.GetDirectoryName(exePath)}</WorkingDirectory>
     </Exec>
   </Actions>
 </Task>";

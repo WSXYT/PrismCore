@@ -139,9 +139,7 @@ public partial class App : Application
     {
         try
         {
-            var settings = AppSettings.Instance;
-            var activeChannel = UpdateService.ResolveAndPersistRecommendedChannel(settings);
-            var svc = new UpdateService(activeChannel == 1);
+            var svc = new UpdateService();
             var update = await svc.CheckForUpdateAsync();
             if (update == null) return;
 

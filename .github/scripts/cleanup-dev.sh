@@ -12,14 +12,6 @@ released_version="$2"
 ROOT="${GITHUB_WORKSPACE:-$(pwd)}"
 source "$ROOT/.github/scripts/versionmd.sh"
 
-dev_entries_file=""
-remaining_entries_file=""
-cleanup_temp_files() {
-  [[ -n "${dev_entries_file:-}" ]] && rm -f "$dev_entries_file"
-  [[ -n "${remaining_entries_file:-}" ]] && rm -f "$remaining_entries_file"
-}
-trap cleanup_temp_files EXIT
-
 if [[ ! -f "$released_entries_file" ]]; then
   echo "找不到已发布条目文件: $released_entries_file" >&2
   exit 1
