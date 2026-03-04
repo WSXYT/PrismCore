@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
+trap 'echo "ERROR: cleanup-dev.sh 在第 $LINENO 行失败，退出码 $?" >&2' ERR
 
 if [[ $# -lt 2 ]]; then
   echo "用法: cleanup-dev.sh <released-entries-file> <released-version>" >&2
