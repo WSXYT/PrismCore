@@ -1,4 +1,4 @@
-﻿name: Junie
+name: Junie
 
 env:
   JUNIE_MODEL: opus

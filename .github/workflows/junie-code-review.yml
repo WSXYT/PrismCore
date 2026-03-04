@@ -1,4 +1,4 @@
-﻿name: Junie Code Review
+name: Junie Code Review
 
 env:
   JUNIE_MODEL: opus
