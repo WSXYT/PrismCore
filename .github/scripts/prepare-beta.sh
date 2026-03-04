@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
+trap 'echo "ERROR: prepare-beta.sh 在第 $LINENO 行失败，退出码 $?" >&2' ERR
 
 ROOT="${GITHUB_WORKSPACE:-$(pwd)}"
 source "$ROOT/.github/scripts/versionmd.sh"
@@ -16,9 +17,9 @@ current_entries_file=""
 previous_entries_file=""
 previous_version_file=""
 cleanup_temp_files() {
-  [[ -n "${current_entries_file:-}" ]] && rm -f "$current_entries_file"
-  [[ -n "${previous_entries_file:-}" ]] && rm -f "$previous_entries_file"
-  [[ -n "${previous_version_file:-}" ]] && rm -f "$previous_version_file"
+  [[ -n "${current_entries_file:-}" ]] && rm -f "$current_entries_file" || true
+  [[ -n "${previous_entries_file:-}" ]] && rm -f "$previous_entries_file" || true
+  [[ -n "${previous_version_file:-}" ]] && rm -f "$previous_version_file" || true
 }
 trap cleanup_temp_files EXIT
 

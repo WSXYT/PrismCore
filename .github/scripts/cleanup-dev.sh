@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
+trap 'echo "ERROR: cleanup-dev.sh 在第 $LINENO 行失败，退出码 $?" >&2' ERR
 
 if [[ $# -lt 2 ]]; then
   echo "用法: cleanup-dev.sh <released-entries-file> <released-version>" >&2
@@ -15,8 +16,8 @@ source "$ROOT/.github/scripts/versionmd.sh"
 dev_entries_file=""
 remaining_entries_file=""
 cleanup_temp_files() {
-  [[ -n "${dev_entries_file:-}" ]] && rm -f "$dev_entries_file"
-  [[ -n "${remaining_entries_file:-}" ]] && rm -f "$remaining_entries_file"
+  [[ -n "${dev_entries_file:-}" ]] && rm -f "$dev_entries_file" || true
+  [[ -n "${remaining_entries_file:-}" ]] && rm -f "$remaining_entries_file" || true
 }
 trap cleanup_temp_files EXIT
 
