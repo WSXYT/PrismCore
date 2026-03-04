@@ -111,7 +111,7 @@ Left sidebar contains five pages:
 - **Cleanup** — Disk space cleanup (Quick/Deep mode)
 - **Optimization** — Memory optimization, startup items, and process management
 - **Toolbox** — Network diagnostics and repair tools
-- **Update** — Check for updates, one-click upgrade, auto-update settings
+- **Update** — Check for updates, one-click upgrade, update channel switching (Stable / Pre-release), auto-update settings
 - **Settings** — All configurable parameters
 
 ### Disk Cleanup Flow
@@ -189,6 +189,14 @@ All settings are saved in real-time and restored after restart. Settings file lo
 | Setting | Default | Description |
 |---------|---------|-------------|
 | DPC/ISR latency monitoring | On | Monitor kernel latency, detect driver issues |
+
+### Update Channel
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| Update channel | Auto (follows installed version) | Stable: receive official releases only; Pre-release: receive Beta and other pre-release updates |
+
+> The update channel automatically aligns with the currently installed version: if a pre-release version is installed, the pre-release channel is selected by default; otherwise the stable channel is selected. After switching channels, you need to check for updates again.
 
 ### Restore Defaults
 
