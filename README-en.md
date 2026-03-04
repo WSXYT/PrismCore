@@ -195,9 +195,7 @@ All settings are saved in real-time and restored after restart. Settings file lo
 | Setting | Default | Description |
 |---------|---------|-------------|
 | Update channel | Stable | Choose "Stable" or "Pre-release"; switching channels automatically re-checks for updates |
-| Update mode | Don't check | 0=Don't check, 1=Check only, 2=Auto install |
-
-> The app automatically recommends a channel based on the current installed version: if running a pre-release build, the "Pre-release" channel is selected by default.
+| Update mode | Auto install | 0=Don't check, 1=Check only, 2=Auto install |
 
 ### Restore Defaults
 
