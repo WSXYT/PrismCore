@@ -42,19 +42,20 @@
 
             <!-- 更新通道 -->
             <TextBlock Text="更新通道" Style="{StaticResource SubtitleTextBlockStyle}" Margin="0,8,0,0"/>
-            <RadioButtons SelectedIndex="{x:Bind ViewModel.SelectedUpdateChannel, Mode=TwoWay}">
-                <RadioButton Content="稳定版本"/>
-                <RadioButton Content="预发布版本"/>
-            </RadioButtons>
+            <ComboBox SelectedIndex="{x:Bind ViewModel.SelectedUpdateChannel, Mode=TwoWay}"
+                      MinWidth="240">
+                <ComboBoxItem Content="稳定版本"/>
+                <ComboBoxItem Content="预发布版本"/>
+            </ComboBox>
 
             <!-- 更新设置 -->
             <TextBlock Text="自动更新设置" Style="{StaticResource SubtitleTextBlockStyle}" Margin="0,8,0,0"/>
-
-            <RadioButtons SelectedIndex="{x:Bind ViewModel.SelectedUpdateMode, Mode=TwoWay}">
-                <RadioButton Content="不自动检查更新"/>
-                <RadioButton Content="仅检查更新（启动时检查，有更新时通知）"/>
-                <RadioButton Content="检查更新后自动安装"/>
-            </RadioButtons>
+            <ComboBox SelectedIndex="{x:Bind ViewModel.SelectedUpdateMode, Mode=TwoWay}"
+                      MinWidth="360">
+                <ComboBoxItem Content="不自动检查更新"/>
+                <ComboBoxItem Content="仅检查更新（启动时检查，有更新时通知）"/>
+                <ComboBoxItem Content="检查更新后自动安装"/>
+            </ComboBox>
         </StackPanel>
     </ScrollViewer>
 </Page>
