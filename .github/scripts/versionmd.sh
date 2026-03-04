@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 set -euo pipefail
-trap 'echo "ERROR: versionmd.sh 在第 $LINENO 行失败，退出码 $?" >&2' ERR
 
 readonly VERSIONMD_SECTIONS=("新增" "变更" "修复" "其他")
 
