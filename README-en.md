@@ -111,7 +111,7 @@ Left sidebar contains five pages:
 - **Cleanup** — Disk space cleanup (Quick/Deep mode)
 - **Optimization** — Memory optimization, startup items, and process management
 - **Toolbox** — Network diagnostics and repair tools
-- **Update** — Check for updates, one-click upgrade, auto-update settings
+- **Update** — Check for updates, one-click upgrade, update channel selection, auto-update settings
 - **Settings** — All configurable parameters
 
 ### Disk Cleanup Flow
@@ -189,6 +189,15 @@ All settings are saved in real-time and restored after restart. Settings file lo
 | Setting | Default | Description |
 |---------|---------|-------------|
 | DPC/ISR latency monitoring | On | Monitor kernel latency, detect driver issues |
+
+### Update Settings
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| Update channel | Stable | Choose "Stable" or "Pre-release"; switching channels automatically re-checks for updates |
+| Update mode | Don't check | 0=Don't check, 1=Check only, 2=Auto install |
+
+> The app automatically recommends a channel based on the current installed version: if running a pre-release build, the "Pre-release" channel is selected by default.
 
 ### Restore Defaults
 
