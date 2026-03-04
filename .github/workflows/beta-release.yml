@@ -28,10 +28,25 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: 诊断脚本文件状态
+        shell: bash
+        run: |
+          echo "=== file 命令检测编码 ==="
+          file .github/scripts/*.sh
+          echo "=== hexdump 检查前 32 字节 ==="
+          for f in .github/scripts/*.sh; do
+            echo "--- $f ---"
+            hexdump -C "$f" | head -2
+          done
+          echo "=== cat -v 检查不可见字符（前 3 行）==="
+          head -3 .github/scripts/prepare-beta.sh | cat -v
+          echo "=== git 配置 ==="
+          git config --list | grep -iE 'autocrlf|eol|encoding' || echo '无相关配置'
+
       - name: 生成预发布元数据
         id: meta
         shell: bash
-        run: bash .github/scripts/prepare-beta.sh
+        run: bash -x .github/scripts/prepare-beta.sh
 
       - name: 创建 beta 标签
         if: steps.meta.outputs.create_tag == 'true'
