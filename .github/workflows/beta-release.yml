@@ -1,14 +1,14 @@
-name: Release
+name: Beta Release
 
 on:
   push:
-    branches: [master]
+    branches: [beta]
 
 permissions:
   contents: write
 
 concurrency:
-  group: release-master
+  group: beta-release
   cancel-in-progress: false
 
 env:
@@ -20,47 +20,36 @@ jobs:
   prepare:
     runs-on: ubuntu-latest
     outputs:
-      publish: ${{ steps.meta.outputs.publish }}
-      create_tag: ${{ steps.meta.outputs.create_tag }}
       tag: ${{ steps.meta.outputs.tag }}
       pack_version: ${{ steps.meta.outputs.pack_version }}
-      version: ${{ steps.meta.outputs.version }}
+      create_tag: ${{ steps.meta.outputs.create_tag }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: 生成正式发布元数据
+      - name: 生成预发布元数据
         id: meta
         shell: bash
-        run: bash .github/scripts/prepare-master.sh
+        run: bash .github/scripts/prepare-beta.sh
 
-      - name: 创建正式标签
-        if: steps.meta.outputs.publish == 'true' && steps.meta.outputs.create_tag == 'true'
+      - name: 创建 beta 标签
+        if: steps.meta.outputs.create_tag == 'true'
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git tag -a "${{ steps.meta.outputs.tag }}" -m "release ${{ steps.meta.outputs.tag }}"
+          git tag -a "${{ steps.meta.outputs.tag }}" -m "beta release ${{ steps.meta.outputs.tag }}"
           git push origin "${{ steps.meta.outputs.tag }}"
 
-      - name: 上传发布说明
-        if: steps.meta.outputs.publish == 'true'
+      - name: 上传 beta 发布说明
         uses: actions/upload-artifact@v4
         with:
-          name: release-notes
+          name: beta-release-notes
           path: release-notes/${{ steps.meta.outputs.tag }}.md
-
-      - name: 上传已发布条目
-        if: steps.meta.outputs.publish == 'true'
-        uses: actions/upload-artifact@v4
-        with:
-          name: released-entries
-          path: release-notes/${{ steps.meta.outputs.tag }}.entries.txt
 
   build:
     needs: prepare
-    if: needs.prepare.outputs.publish == 'true'
     runs-on: windows-latest
     strategy:
       fail-fast: false
@@ -119,13 +108,12 @@ jobs:
       - name: 上传产物
         uses: actions/upload-artifact@v4
         with:
-          name: release-${{ matrix.rid }}
+          name: beta-${{ matrix.rid }}
           path: Releases/*
           retention-days: 14
 
   release:
     needs: [prepare, build]
-    if: needs.prepare.outputs.publish == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -133,14 +121,14 @@ jobs:
       - name: 下载安装包
         uses: actions/download-artifact@v4
         with:
-          pattern: release-win-*
+          pattern: beta-win-*
           path: artifacts
           merge-multiple: true
 
       - name: 下载发布说明
         uses: actions/download-artifact@v4
         with:
-          name: release-notes
+          name: beta-release-notes
           path: notes
 
       - name: 定位发布说明文件
@@ -154,32 +142,13 @@ jobs:
           cat .github/release-body-footer.md >> "$final_body"
           echo "note_path=$final_body" >> "$GITHUB_OUTPUT"
 
-      - name: 创建 GitHub 正式发布
+      - name: 创建 GitHub 预发布
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ needs.prepare.outputs.tag }}
           target_commitish: ${{ github.sha }}
-          name: PrismCore ${{ needs.prepare.outputs.tag }}
+          name: PrismCore ${{ needs.prepare.outputs.tag }} [预发布]
           body_path: ${{ steps.notes.outputs.note_path }}
-          prerelease: false
-          make_latest: true
+          prerelease: true
+          make_latest: false
           files: artifacts/*
-
-  cleanup-dev:
-    needs: [prepare, release]
-    if: needs.prepare.outputs.publish == 'true' && needs.release.result == 'success'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: 下载已发布条目
-        uses: actions/download-artifact@v4
-        with:
-          name: released-entries
-          path: release-data
-
-      - name: 清理 dev 分支已发布条目
-        shell: bash
-        run: bash .github/scripts/cleanup-dev.sh "release-data/${{ needs.prepare.outputs.tag }}.entries.txt" "${{ needs.prepare.outputs.version }}"

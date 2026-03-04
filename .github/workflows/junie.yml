@@ -1,5 +1,8 @@
 name: Junie
 
+env:
+  JUNIE_MODEL: opus
+
 on:
   # 交互式助手触发
   issue_comment:
@@ -13,14 +16,10 @@ on:
   # 代码审查触发
   pull_request:
     types: [opened, synchronize]
-    branches: [master]
-  # 文档同步触发（PR 合并后）
-  pull_request_target:
-    types: [closed]
-    branches: [master]
-  # 冲突解决触发
+    branches: [dev, beta, master]
+  # push 触发（当前分支范围：dev / beta / master）
   push:
-    branches: [master]
+    branches: [dev, beta, master]
   workflow_dispatch:
     inputs:
       action:
@@ -55,7 +54,7 @@ jobs:
       - uses: JetBrains/junie-github-action@v0
         with:
           junie_api_key: ${{ secrets.JUNIE_API_KEY }}
-          model: claude-opus-4-5-20251101
+          model: ${{ env.JUNIE_MODEL }}
           base_branch: master
           create_new_branch_for_pr: "true"
           use_single_comment: "true"
@@ -76,13 +75,13 @@ jobs:
         with:
           junie_api_key: ${{ secrets.JUNIE_API_KEY }}
           prompt: code-review
-          model: claude-opus-4-5-20251101
+          model: ${{ env.JUNIE_MODEL }}
           use_single_comment: "true"
 
-  # 文档同步：PR 合并到 master 时触发
+  # 文档同步：push 到 beta 或 master 时触发
   # 根据 PrismCore 项目特点优化，支持中英文双语文档
   docs-sync:
-    if: github.event_name == 'pull_request_target' && github.event.pull_request.merged == true
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/beta' || github.ref == 'refs/heads/master')
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -90,11 +89,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 1
+          fetch-depth: 0
       - uses: JetBrains/junie-github-action@v0
         with:
           junie_api_key: ${{ secrets.JUNIE_API_KEY }}
-          model: claude-opus-4-5-20251101
+          model: ${{ env.JUNIE_MODEL }}
+          base_branch: ${{ github.ref_name }}
           create_new_branch_for_pr: "true"
           prompt: |
             # 文档同步任务 / Documentation Sync Task
@@ -115,7 +115,7 @@ jobs:
             - **重要**: 中英文文档必须同步更新，保持内容完全一致
 
             ## 任务说明 / Task Description
-            1. 使用 `gh pr diff ${{ github.event.pull_request.head.ref }}` 获取 PR 变更
+            1. 使用 `git diff ${{ github.event.before }} ${{ github.sha }}` 获取本次 push 的变更
             2. 分析代码变更，判断哪些文档需要更新
             3. 更新文档中的相关内容
 
@@ -147,7 +147,7 @@ jobs:
             6. **仅修改文档文件**: 只修改 .md 文档文件，不要修改代码
 
             ## 输出格式 / Output Format
-            完成同步后，提交变更并创建 PR，PR 标题格式: `docs: sync documentation from PR #{$PR_NUMBER}`
+            完成同步后，提交变更并创建 PR，PR 标题格式: `docs: sync documentation from push ${{ github.sha }}`
 
             如果没有文档需要更新，不要创建空提交。
 
@@ -173,12 +173,12 @@ jobs:
         with:
           junie_api_key: ${{ secrets.JUNIE_API_KEY }}
           prompt: fix-ci
-          model: claude-opus-4-5-20251101
+          model: ${{ env.JUNIE_MODEL }}
           create_new_branch_for_pr: "true"
           use_single_comment: "true"
           allowed_mcp_servers: mcp_github_checks_server
 
-  # 合并冲突解决：master 有新推送或手动触发时
+  # 合并冲突解决：push（当前配置会在 dev / beta / master 触发）或手动触发
   resolve-conflicts:
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
@@ -193,7 +193,7 @@ jobs:
       - uses: JetBrains/junie-github-action@v0
         with:
           junie_api_key: ${{ secrets.JUNIE_API_KEY }}
-          model: claude-opus-4-5-20251101
+          model: ${{ env.JUNIE_MODEL }}
           resolve_conflicts: true
 
   # 密钥检测：扫描 PR 中是否意外提交敏感信息
@@ -213,7 +213,7 @@ jobs:
         with:
           junie_api_key: ${{ secrets.JUNIE_API_KEY }}
           silent_mode: "true"
-          model: claude-opus-4-5-20251101
+          model: ${{ env.JUNIE_MODEL }}
           prompt: |
             # 密钥扫描任务 / Secret Scan Task
 
