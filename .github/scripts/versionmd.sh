@@ -6,7 +6,7 @@ readonly VERSIONMD_SECTIONS=("新增" "变更" "修复" "其他")
 parse_version() {
   local file_path="$1"
   local version_line
-  version_line="$(grep -E '^Version:[[:space:]]*[0-9]+\.[0-9]+\.[0-9]+[[:space:]]*$' "$file_path" | head -n 1 || true)"
+  version_line="$(tr -d '\r' < "$file_path" | grep -E '^Version:[[:space:]]*[0-9]+\.[0-9]+\.[0-9]+[[:space:]]*$' | head -n 1 || true)"
   if [[ -z "$version_line" ]]; then
     echo "未在 $file_path 找到合法的 Version: X.Y.Z 行。" >&2
     return 1
@@ -25,6 +25,7 @@ extract_entries() {
 
   while IFS= read -r raw_line || [[ -n "$raw_line" ]]; do
     local line
+    raw_line="${raw_line%$'\r'}"
     line="$(printf '%s' "$raw_line" | sed -E 's/[[:space:]]+$//')"
 
     if [[ "$line" =~ ^##[[:space:]]+待发布[[:space:]]*$ ]]; then
