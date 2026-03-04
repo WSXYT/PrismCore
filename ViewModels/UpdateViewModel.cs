@@ -10,9 +10,10 @@ namespace PrismCore.ViewModels;
 /// <summary>更新页面视图模型。</summary>
 public partial class UpdateViewModel : ObservableObject
 {
-    private readonly UpdateService _updateService = new();
     private readonly AppSettings _settings = AppSettings.Instance;
     private UpdateInfo? _cachedUpdate;
+    private UpdateService? _activeUpdateService;
+    private bool? _lastCheckedPrerelease;
 
     [ObservableProperty] private string _currentVersion = UpdateService.GetCurrentVersion();
     [ObservableProperty] private string _latestVersion = "未检查";
@@ -22,15 +23,28 @@ public partial class UpdateViewModel : ObservableObject
     [ObservableProperty] private int _updateProgress;
     [ObservableProperty] private string _statusMessage = "";
     [ObservableProperty] private int _selectedUpdateMode;
+    [ObservableProperty] private int _selectedUpdateChannel;
 
     public UpdateViewModel()
     {
         _selectedUpdateMode = _settings.UpdateMode;
+        _selectedUpdateChannel = _settings.UpdateChannel;
     }
 
     partial void OnSelectedUpdateModeChanged(int value)
     {
         _settings.UpdateMode = value;
+    }
+
+    partial void OnSelectedUpdateChannelChanged(int value)
+    {
+        _settings.UpdateChannel = value;
+        _cachedUpdate = null;
+        _activeUpdateService = null;
+        LatestVersion = "未检查";
+        IsUpToDate = false;
+        StatusMessage = string.Empty;
+        OnPropertyChanged(nameof(HasUpdate));
     }
 
     public bool HasUpdate => _cachedUpdate != null && !IsUpToDate;
@@ -44,10 +58,26 @@ public partial class UpdateViewModel : ObservableObject
 
         try
         {
-            _cachedUpdate = await _updateService.CheckForUpdateAsync();
-            if (_cachedUpdate != null)
+            var includePrerelease = SelectedUpdateChannel == 1;
+
+            // 仅在通道变更或首次使用时创建新 UpdateService
+            if (_activeUpdateService == null || _lastCheckedPrerelease != includePrerelease)
             {
-                LatestVersion = _cachedUpdate.TargetFullRelease.Version.ToString();
+                _activeUpdateService = new UpdateService(includePrerelease);
+                _lastCheckedPrerelease = includePrerelease;
+            }
+
+            var service = _activeUpdateService;
+            var update = await service.CheckForUpdateAsync();
+
+            // 如果检查期间用户切换了通道，此结果已过期，直接丢弃。
+            if (!ReferenceEquals(_activeUpdateService, service))
+                return;
+
+            _cachedUpdate = update;
+            if (update != null)
+            {
+                LatestVersion = update.TargetFullRelease.Version.ToString();
                 IsUpToDate = false;
                 StatusMessage = "发现新版本";
             }
@@ -60,12 +90,14 @@ public partial class UpdateViewModel : ObservableObject
         }
         catch (InvalidOperationException)
         {
+            _cachedUpdate = null;
             LatestVersion = "不可用";
             StatusMessage = "当前为非安装版本，无法检查更新";
         }
         catch (Exception ex)
         {
             Log.Error(ex, "检查更新失败");
+            _cachedUpdate = null;
             LatestVersion = "检查失败";
             StatusMessage = "检查更新失败";
         }
@@ -79,14 +111,14 @@ public partial class UpdateViewModel : ObservableObject
     [RelayCommand]
     private async Task UpdateAsync()
     {
-        if (IsUpdating || _cachedUpdate == null) return;
+        if (IsUpdating || _cachedUpdate == null || _activeUpdateService == null) return;
         IsUpdating = true;
         UpdateProgress = 0;
         StatusMessage = "正在下载更新...";
 
         try
         {
-            await _updateService.DownloadAndApplyAsync(_cachedUpdate, progress =>
+            await _activeUpdateService.DownloadAndApplyAsync(_cachedUpdate, progress =>
             {
                 App.MainWindow?.DispatcherQueue.TryEnqueue(() =>
                 {

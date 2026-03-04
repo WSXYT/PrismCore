@@ -476,5 +476,6 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
         if (_disposed) return;
         _disposed = true;
         Stop();
+        GC.SuppressFinalize(this);
     }
 }
