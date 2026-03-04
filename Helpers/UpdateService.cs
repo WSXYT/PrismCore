@@ -1,4 +1,6 @@
 using Serilog;
+using PrismCore.Models;
+using System.Reflection;
 using Velopack;
 using Velopack.Sources;
 
@@ -34,15 +36,80 @@ public sealed class UpdateService
 {
     private const string RepoUrl = "https://github.com/WSXYT/PrismCore";
     private const string ProxyBaseUrl = "https://gemini.435535.xyz";
+    private readonly Func<IUpdateSource>[] _sources;
+
+    public UpdateService(bool includePrerelease)
+    {
+        _sources =
+        [
+            () => new GithubSource(RepoUrl, null, includePrerelease, new ProxyFileDownloader(ProxyBaseUrl)),
+            () => new GithubSource(RepoUrl, null, includePrerelease),
+        ];
+    }
+
+    private static UpdateManager CreateProbeManager() =>
+        new(new GithubSource(RepoUrl, null, false));
+
+    private static bool IsInstalledByVelopack()
+    {
+        try
+        {
+            var mgr = CreateProbeManager();
+            return mgr.IsInstalled;
+        }
+        catch { /* 非 Velopack 安装环境 */ }
+
+        return false;
+    }
+
+    private static bool TryGetInstalledVersion(out string version)
+    {
+        version = string.Empty;
+        try
+        {
+            var mgr = CreateProbeManager();
+            if (!mgr.IsInstalled || mgr.CurrentVersion is null) return false;
+            version = mgr.CurrentVersion.ToString();
+            return !string.IsNullOrWhiteSpace(version);
+        }
+        catch { /* 非 Velopack 安装环境 */ }
+
+        return false;
+    }
 
     /// <summary>
-    /// 更新源列表，按优先级排列。代理优先，直连备用
+    /// 按当前安装版本通道修正设置，并返回生效通道（0=稳定，1=预发布）。
     /// </summary>
-    private static readonly Func<IUpdateSource>[] Sources =
-    [
-        () => new GithubSource(RepoUrl, null, true, new ProxyFileDownloader(ProxyBaseUrl)),
-        () => new GithubSource(RepoUrl, null, true),
-    ];
+    public static int ResolveAndPersistRecommendedChannel(AppSettings settings)
+    {
+        var recommendedChannel = GetRecommendedChannel();
+        if (settings.LastInstalledChannel != recommendedChannel)
+        {
+            settings.UpdateChannel = recommendedChannel;
+            settings.LastInstalledChannel = recommendedChannel;
+        }
+
+        return settings.UpdateChannel;
+    }
+
+    /// <summary>
+    /// 根据当前已安装版本推断推荐通道：0=稳定，1=预发布
+    /// </summary>
+    public static int GetRecommendedChannel() => IsCurrentBuildPrerelease() ? 1 : 0;
+
+    private static bool IsCurrentBuildPrerelease()
+    {
+        if (TryGetInstalledVersion(out var installedVersion))
+            return IsPrereleaseVersion(installedVersion);
+
+        var infoVersion = typeof(UpdateService).Assembly
+            .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
+
+        return !string.IsNullOrWhiteSpace(infoVersion) && IsPrereleaseVersion(infoVersion);
+    }
+
+    private static bool IsPrereleaseVersion(string version) =>
+        version.Contains('-', StringComparison.Ordinal);
 
     private UpdateManager? _manager;
 
@@ -51,12 +118,8 @@ public sealed class UpdateService
     /// </summary>
     public static string GetCurrentVersion()
     {
-        try
-        {
-            var mgr = new UpdateManager(new GithubSource(RepoUrl, null, true));
-            if (mgr.IsInstalled && mgr.CurrentVersion is { } v) return v.ToString();
-        }
-        catch { /* 非 Velopack 安装环境 */ }
+        if (TryGetInstalledVersion(out var installedVersion))
+            return installedVersion;
 
         return typeof(UpdateService).Assembly.GetName().Version?.ToString(3) ?? "未知";
     }
@@ -64,18 +127,7 @@ public sealed class UpdateService
     /// <summary>
     /// 当前是否为 Velopack 安装环境
     /// </summary>
-    public static bool IsVelopackInstalled
-    {
-        get
-        {
-            try
-            {
-                var mgr = new UpdateManager(new GithubSource(RepoUrl, null, true));
-                return mgr.IsInstalled;
-            }
-            catch { return false; }
-        }
-    }
+    public static bool IsVelopackInstalled() => IsInstalledByVelopack();
 
     /// <summary>
     /// 检查更新，自动尝试多个源。
@@ -84,11 +136,11 @@ public sealed class UpdateService
     /// </summary>
     public async Task<UpdateInfo?> CheckForUpdateAsync()
     {
-        for (var i = 0; i < Sources.Length; i++)
+        for (var i = 0; i < _sources.Length; i++)
         {
             try
             {
-                var source = Sources[i]();
+                var source = _sources[i]();
                 _manager = new UpdateManager(source);
 
                 if (!_manager.IsInstalled)

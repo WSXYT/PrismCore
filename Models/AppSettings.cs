@@ -34,9 +34,11 @@ public sealed class AppSettings
 
     private void DebounceSave()
     {
-        _saveCts?.Cancel();
-        _saveCts = new CancellationTokenSource();
-        var token = _saveCts.Token;
+        var newCts = new CancellationTokenSource();
+        var oldCts = Interlocked.Exchange(ref _saveCts, newCts);
+        oldCts?.Cancel();
+        oldCts?.Dispose();
+        var token = newCts.Token;
         Task.Delay(500, token).ContinueWith(_ => Save(), token, TaskContinuationOptions.OnlyOnRanToCompletion, TaskScheduler.Default);
     }
 
@@ -115,6 +117,12 @@ public sealed class AppSettings
 
     // 更新模式：0=不检查, 1=仅检查, 2=自动安装
     public int UpdateMode { get => Get("update_mode", 0); set => Set("update_mode", value); }
+
+    // 更新通道：0=稳定版本, 1=预发布版本
+    public int UpdateChannel { get => Get("update_channel", 0); set => Set("update_channel", value); }
+
+    // 记录最近一次安装版本的通道（0=稳定, 1=预发布），用于通道默认值自动对齐
+    public int LastInstalledChannel { get => Get("last_installed_channel", -1); set => Set("last_installed_channel", value); }
 
     /// <summary>恢复所有设置为默认值。</summary>
     public void ResetToDefaults()

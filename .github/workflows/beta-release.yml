@@ -121,6 +121,7 @@ jobs:
       - name: 下载安装包
         uses: actions/download-artifact@v4
         with:
+          pattern: beta-win-*
           path: artifacts
           merge-multiple: true
 

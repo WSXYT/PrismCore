@@ -7,7 +7,8 @@
     <ScrollViewer Padding="32,24">
         <StackPanel Spacing="16">
             <TextBlock Text="软件更新" Style="{StaticResource TitleTextBlockStyle}"/>
-            <TextBlock Text="检查并安装最新版本" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+            <TextBlock Text="检查并安装最新版本"
+                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
 
             <!-- 版本信息 -->
             <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
@@ -38,6 +39,13 @@
             <ProgressBar Value="{x:Bind ViewModel.UpdateProgress, Mode=OneWay}"
                          Maximum="100"
                          Visibility="{x:Bind ViewModel.IsUpdating, Mode=OneWay}"/>
+
+            <!-- 更新通道 -->
+            <TextBlock Text="更新通道" Style="{StaticResource SubtitleTextBlockStyle}" Margin="0,8,0,0"/>
+            <RadioButtons SelectedIndex="{x:Bind ViewModel.SelectedUpdateChannel, Mode=TwoWay}">
+                <RadioButton Content="稳定版本"/>
+                <RadioButton Content="预发布版本"/>
+            </RadioButtons>
 
             <!-- 更新设置 -->
             <TextBlock Text="自动更新设置" Style="{StaticResource SubtitleTextBlockStyle}" Margin="0,8,0,0"/>

@@ -6,13 +6,13 @@ readonly VERSIONMD_SECTIONS=("新增" "变更" "修复" "其他")
 parse_version() {
   local file_path="$1"
   local version_line
-  version_line="$(grep -E '^Version:[[:space:]]*[0-9]+\.[0-9]+\.[0-9]+[[:space:]]*$' "$file_path" | head -n 1 || true)"
+  version_line="$(tr -d '\r' < "$file_path" | grep -E '^Version:[[:space:]]*[0-9]+\.[0-9]+\.[0-9]+[[:space:]]*$' | head -n 1 || true)"
   if [[ -z "$version_line" ]]; then
     echo "未在 $file_path 找到合法的 Version: X.Y.Z 行。" >&2
     return 1
   fi
 
-  echo "$version_line" | sed -E 's/^Version:[[:space:]]*//'
+  echo "$version_line" | sed -E 's/^Version:[[:space:]]*//; s/[[:space:]]*$//'
 }
 
 extract_entries() {
@@ -25,9 +25,10 @@ extract_entries() {
 
   while IFS= read -r raw_line || [[ -n "$raw_line" ]]; do
     local line
+    raw_line="${raw_line%$'\r'}"
     line="$(printf '%s' "$raw_line" | sed -E 's/[[:space:]]+$//')"
 
-    if [[ "$line" =~ ^##[[:space:]]+待发布 ]]; then
+    if [[ "$line" =~ ^##[[:space:]]+待发布[[:space:]]*$ ]]; then
       in_unreleased="true"
       current_section=""
       continue
@@ -43,34 +44,25 @@ extract_entries() {
       continue
     fi
 
-    case "$line" in
-      "### 新增")
-        current_section="新增"
-        ;;
-      "### 变更")
-        current_section="变更"
-        ;;
-      "### 修复")
-        current_section="修复"
-        ;;
-      "### 其他")
-        current_section="其他"
-        ;;
-      "### "*)
-        current_section=""
-        ;;
-      "- "*)
-        if [[ -n "$current_section" ]]; then
-          local item
-          item="${line#- }"
-          if [[ -n "$item" ]]; then
-            printf '%s\t%s\n' "$current_section" "$item" >> "$output_file"
-          fi
+    if [[ "$line" == "### "* ]]; then
+      current_section=""
+      local section
+      for section in "${VERSIONMD_SECTIONS[@]}"; do
+        if [[ "$line" == "### $section" ]]; then
+          current_section="$section"
+          break
         fi
-        ;;
-      *)
-        ;;
-    esac
+      done
+      continue
+    fi
+
+    if [[ "$line" == "- "* ]] && [[ -n "$current_section" ]]; then
+      local item
+      item="${line#- }"
+      if [[ -n "$item" ]]; then
+        printf '%s\t%s\n' "$current_section" "$item" >> "$output_file"
+      fi
+    fi
   done < "$file_path"
 }
 
@@ -115,7 +107,7 @@ write_notes() {
 
     local section
     for section in "${VERSIONMD_SECTIONS[@]}"; do
-      mapfile -t section_items < <(awk -F '\t' -v target="$section" '$1 == target { print $2 }' "$entries_file")
+      mapfile -t section_items < <(awk -F '\t' -v target="$section" '$1 == target { sub(/^[^\t]*\t/, ""); print }' "$entries_file")
       if ((${#section_items[@]} == 0)); then
         continue
       fi
@@ -146,7 +138,7 @@ write_versionmd() {
     local section
     for section in "${VERSIONMD_SECTIONS[@]}"; do
       echo "### $section"
-      awk -F '\t' -v target="$section" '$1 == target { print "- " $2 }' "$entries_file"
+      awk -F '\t' -v target="$section" '$1 == target { sub(/^[^\t]*\t/, ""); print "- " $0 }' "$entries_file"
       echo
     done
   } > "$output_file"

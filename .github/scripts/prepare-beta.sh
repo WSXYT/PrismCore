@@ -12,6 +12,16 @@ fi
 
 version="$(parse_version "$VERSION_FILE")"
 
+current_entries_file=""
+previous_entries_file=""
+previous_version_file=""
+cleanup_temp_files() {
+  [[ -n "${current_entries_file:-}" ]] && rm -f "$current_entries_file"
+  [[ -n "${previous_entries_file:-}" ]] && rm -f "$previous_entries_file"
+  [[ -n "${previous_version_file:-}" ]] && rm -f "$previous_version_file"
+}
+trap cleanup_temp_files EXIT
+
 mapfile -t valid_tags < <(git tag -l "v${version}-beta.*" | grep -E "^v${version}-beta\.[0-9]+$" | sort -V || true)
 head_tag="$(git tag --points-at HEAD | grep -E "^v${version}-beta\.[0-9]+$" | sort -V | tail -n 1 || true)"
 
