@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 set -euo pipefail
-trap 'echo "ERROR: prepare-beta.sh 在第 $LINENO 行失败，退出码 $?" >&2' ERR
 
 ROOT="${GITHUB_WORKSPACE:-$(pwd)}"
 source "$ROOT/.github/scripts/versionmd.sh"

@@ -27,3 +27,7 @@ logs/
 
 # Qodana
 qodana.yaml
+
+# 环境变量（防止敏感信息泄露）
+.env
+.env.*

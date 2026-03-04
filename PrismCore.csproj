@@ -9,6 +9,8 @@
     <Platforms>x86;x64;ARM64</Platforms>
     <Platform Condition="'$(Platform)' == ''">x64</Platform>
     <RuntimeIdentifiers>win-x86;win-x64;win-arm64</RuntimeIdentifiers>
+    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == '' and '$(Platform)' != 'AnyCPU' and '$(Platform)' != ''">win-$([MSBuild]::ValueOrDefault('$(Platform)','x64').ToLowerInvariant())</RuntimeIdentifier>
+    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == '' and ('$(Platform)' == 'AnyCPU' or '$(Platform)' == '')">win-x64</RuntimeIdentifier>
     <UseWinUI>true</UseWinUI>
     <WindowsPackageType>MSIX</WindowsPackageType>
     <EnableMsixTooling>true</EnableMsixTooling>
