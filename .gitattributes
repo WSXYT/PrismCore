@@ -1,4 +1,4 @@
-﻿# 自动规范化文本文件的行尾
+# 自动规范化文本文件的行尾
 * text=auto
 
 # Shell 脚本始终使用 LF 行尾（防止 Windows checkout 转为 CRLF 导致 CI 失败）
