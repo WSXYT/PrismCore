@@ -127,10 +127,7 @@ public sealed class UpdateService
     /// <summary>
     /// 当前是否为 Velopack 安装环境
     /// </summary>
-    public static bool IsVelopackInstalled
-    {
-        get => IsInstalledByVelopack();
-    }
+    public static bool IsVelopackInstalled() => IsInstalledByVelopack();
 
     /// <summary>
     /// 检查更新，自动尝试多个源。

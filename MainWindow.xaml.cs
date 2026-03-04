@@ -59,6 +59,7 @@ public sealed partial class MainWindow : Window
             GlobalInfoBar.Title = title;
             GlobalInfoBar.Message = message;
             GlobalInfoBar.Severity = severity;
+            GlobalInfoBar.ActionButton = null;
             GlobalInfoBar.IsOpen = true;
 
             if (_infoBarTimer == null)
@@ -117,8 +118,8 @@ public sealed partial class MainWindow : Window
             DispatcherQueue.TryEnqueue(() =>
             {
                 ContentFrame.Navigate(pageType);
-                // 同步选中对应导航项
-                foreach (var item in NavView.MenuItems.OfType<NavigationViewItem>())
+                // 同步选中对应导航项（MenuItems + FooterMenuItems）
+                foreach (var item in NavView.MenuItems.Concat(NavView.FooterMenuItems).OfType<NavigationViewItem>())
                 {
                     if (item.Tag is string t && t == tag)
                     {
