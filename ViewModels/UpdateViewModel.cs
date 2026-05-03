@@ -52,7 +52,7 @@ public partial class UpdateViewModel : ObservableObject
     [RelayCommand]
     private async Task CheckForUpdateAsync()
     {
-        if (IsChecking) return;
+        if (IsChecking || IsUpdating) return;
         IsChecking = true;
         StatusMessage = "正在检查更新...";
 

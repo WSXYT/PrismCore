@@ -114,6 +114,11 @@ public sealed class UpdateService
     private UpdateManager? _manager;
 
     /// <summary>
+    /// 全局下载锁，防止多个 UpdateService 实例并发执行下载导致 Velopack 锁文件冲突。
+    /// </summary>
+    private static readonly SemaphoreSlim _globalDownloadLock = new(1, 1);
+
+    /// <summary>
     /// 获取当前应用版本（Velopack 优先，回退到程序集版本）
     /// </summary>
     public static string GetCurrentVersion()
@@ -165,15 +170,30 @@ public sealed class UpdateService
     }
 
     /// <summary>
-    /// 下载并应用更新，完成后重启应用
+    /// 下载并应用更新，完成后重启应用。
+    /// 使用全局锁确保同一时刻只有一个下载操作在运行，避免 Velopack 锁文件冲突。
     /// </summary>
     public async Task DownloadAndApplyAsync(UpdateInfo update, Action<int>? onProgress = null)
     {
         if (_manager is null)
             throw new InvalidOperationException("请先调用 CheckForUpdateAsync");
 
-        await _manager.DownloadUpdatesAsync(update, onProgress);
-        Log.Information("更新下载完成，准备重启");
-        _manager.ApplyUpdatesAndRestart(update);
+        var acquired = await _globalDownloadLock.WaitAsync(TimeSpan.Zero);
+        if (!acquired)
+        {
+            Log.Warning("已有更新操作正在进行，跳过本次下载");
+            return;
+        }
+
+        try
+        {
+            await _manager.DownloadUpdatesAsync(update, onProgress);
+            Log.Information("更新下载完成，准备重启");
+            _manager.ApplyUpdatesAndRestart(update);
+        }
+        finally
+        {
+            _globalDownloadLock.Release();
+        }
     }
 }
